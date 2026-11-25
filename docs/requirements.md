@@ -28,7 +28,8 @@ Personal local dictation app for macOS (superwhisper-style), built from scratch.
 
 ## Live bar (overlay)
 - R19. While recording, a floating bar appears at the **top-centre** of the screen under the mouse cursor. It never takes focus or mouse clicks, so the text still pastes into the app you were in.
-- R20. The bar shows live text, a mic level meter and an m:ss timer. Before any text arrives it shows «Говорите… (Esc — отмена)». Long text shows only the latest words, starting with «…».
+- R20. The bar shows live text, a mic level meter and an m:ss timer. Before any text arrives it shows «Говорите… (Esc — отмена)».
+- R20a. The bar is 720 px wide and grows downwards with the text (top edge fixed), up to half of the visible screen; beyond that the text auto-scrolls so the newest words stay visible. (Replaces the earlier 2-line «…tail» display, 2026-11-25.)
 - R21. Live text comes from FluidAudio's sliding-window streaming (Parakeet v3), window 4 s left / 1 s chunk / 0.5 s right: first words after ~1.5 s, updates every ~1 s. It is a **preview only**: the pasted text still comes from the full batch pass (R1).
 - R22. After stop, the bar shows «Распознавание…», then hides as soon as the text is pasted. Cancel (Esc), too-short recordings and errors hide it immediately.
 

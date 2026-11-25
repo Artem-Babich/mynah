@@ -44,6 +44,21 @@ public enum ElapsedFormat {
 
 /// Bar frame: top-centre of the given screen's visible area (AppKit y-up coordinates).
 public enum OverlayLayout {
+    public static let width: CGFloat = 720
+    public static let minHeight: CGFloat = 64
+    /// Top + bottom padding around the text block.
+    public static let verticalPadding: CGFloat = 40
+
+    /// Height that fits the text, clamped to [minHeight, maxHeight].
+    public static func panelHeight(textHeight: CGFloat, maxHeight: CGFloat) -> CGFloat {
+        min(maxHeight, max(minHeight, textHeight + verticalPadding))
+    }
+
+    /// The bar never covers more than half of the visible screen.
+    public static func maxHeight(visibleFrame: CGRect) -> CGFloat {
+        visibleFrame.height / 2
+    }
+
     public static func frame(visibleFrame: CGRect, size: CGSize, topMargin: CGFloat) -> CGRect {
         CGRect(
             x: visibleFrame.midX - size.width / 2,
