@@ -88,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case .start: startRecording()
         case .stop: stopRecording()
         case .cancel: cancelRecording()
+        case .send: break  // wired in settings work
         case .none: break
         }
     }
