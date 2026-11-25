@@ -26,6 +26,12 @@ Personal local dictation app for macOS (superwhisper-style), built from scratch.
 - R15. Menu shows the 10 latest dictations; clicking one copies it.
 - R16. Menu links: open history JSON, open log, grant Accessibility (when missing), reset error, quit.
 
+## Live bar (overlay)
+- R19. While recording, a floating bar appears at the **top-centre** of the screen under the mouse cursor. It never takes focus or mouse clicks, so the text still pastes into the app you were in.
+- R20. The bar shows live text, a mic level meter and an m:ss timer. Before any text arrives it shows «Говорите… (Esc — отмена)». Long text shows only the latest words, starting with «…».
+- R21. Live text comes from FluidAudio's sliding-window streaming (Parakeet v3), window 4 s left / 1 s chunk / 0.5 s right: first words after ~1.5 s, updates every ~1 s. It is a **preview only**: the pasted text still comes from the full batch pass (R1).
+- R22. After stop, the bar shows «Распознавание…», then hides as soon as the text is pasted. Cancel (Esc), too-short recordings and errors hide it immediately.
+
 ## History & logs
 - R17. Every dictation is stored newest-first in `~/Library/Application Support/WhisperBar/history.json`, capped at 500 entries; survives restarts; a corrupted file never blocks startup.
 - R18. Log file: `~/Library/Logs/WhisperBar/WhisperBar.log`.

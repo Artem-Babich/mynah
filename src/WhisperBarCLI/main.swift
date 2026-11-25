@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import WhisperBarCore
 import WhisperBarEngine
@@ -28,6 +29,28 @@ do {
         let raw = try await engine.transcribe(file: URL(fileURLWithPath: args[2]))
         print(TranscriptCleaner.clean(raw) ?? "")
         FileHandle.standardError.write(Data(String(format: "transcribed in %.2fs\n", Date().timeIntervalSince(t1)).utf8))
+    case "live" where args.count >= 3:
+        // Feed the file in 100 ms chunks at real-time speed and print live updates.
+        guard var factory = await engine.liveSessions else { exit(1) }
+        // WB_LIVE="chunk,left,right" overrides the window layout for experiments.
+        if let spec = ProcessInfo.processInfo.environment["WB_LIVE"]?.split(separator: ",").compactMap({ Double($0) }),
+           spec.count == 3 {
+            (factory.chunk, factory.left, factory.right) = (spec[0], spec[1], spec[2])
+        }
+        let t0 = Date()
+        let session = factory.start { text in
+            print(String(format: "[%5.2fs] %@", Date().timeIntervalSince(t0), text))
+        }
+        let file = try AVAudioFile(forReading: URL(fileURLWithPath: args[2]))
+        let chunk = AVAudioFrameCount(file.processingFormat.sampleRate / 10)
+        while file.framePosition < file.length {
+            guard let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: chunk) else { break }
+            try file.read(into: buf, frameCount: chunk)
+            session.feed(buf)
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        try await Task.sleep(nanoseconds: 1_500_000_000)
+        await session.stop()
     default:
         print("usage: whisperbar-cli download | transcribe <audio-file>")
         exit(2)

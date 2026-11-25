@@ -11,6 +11,10 @@ final class AudioRecorder {
     private var converter: AVAudioConverter?
     private(set) var isRunning = false
 
+    /// Called on the audio thread with each converted 16 kHz chunk (for live preview + level meter).
+    /// Set before `start()`; cleared by `stop()`.
+    var onChunk: ((AVAudioPCMBuffer, UnsafeBufferPointer<Float>) -> Void)?
+
     func start() throws {
         lock.withLock { samples.removeAll(keepingCapacity: true) }
         let input = engine.inputNode
@@ -41,6 +45,7 @@ final class AudioRecorder {
             isRunning = false
         }
         converter = nil
+        onChunk = nil
         return lock.withLock {
             let out = samples
             samples = []
@@ -67,6 +72,7 @@ final class AudioRecorder {
         guard error == nil, let channel = out.floatChannelData, out.frameLength > 0 else { return }
         let chunk = UnsafeBufferPointer(start: channel[0], count: Int(out.frameLength))
         lock.withLock { samples.append(contentsOf: chunk) }
+        onChunk?(out, chunk)
     }
 
     enum RecorderError: Error, LocalizedError {

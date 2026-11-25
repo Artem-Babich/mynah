@@ -8,6 +8,7 @@ public actor ParakeetEngine {
     public static let sampleRate: Double = 16_000
 
     private var manager: AsrManager?
+    private var models: AsrModels?
 
     public init() {}
 
@@ -25,7 +26,11 @@ public actor ParakeetEngine {
         let m = AsrManager(config: .default)
         try await m.loadModels(models)
         manager = m
+        self.models = models
     }
+
+    /// Available once `load()` succeeded.
+    public var liveSessions: LiveSessionFactory? { models.map { LiveSessionFactory(models: $0) } }
 
     /// 16 kHz mono float samples → raw transcript.
     public func transcribe(samples: [Float]) async throws -> String {

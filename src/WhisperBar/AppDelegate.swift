@@ -24,6 +24,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("WhisperBar/history.json"))
     private var status: Status = .loading(0) { didSet { refreshIcon() } }
+    private let overlay = OverlayPanel()
+    private var liveFactory: LiveSessionFactory?
+    private var liveSession: LiveSession?
 
     // MARK: lifecycle
 
@@ -54,7 +57,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 Task { @MainActor in self?.status = .loading(p) }
             }
             Log.info(String(format: "model loaded in %.1fs", Date().timeIntervalSince(t0)))
-            await MainActor.run { status = .ready }
+            let factory = await engine.liveSessions
+            await MainActor.run {
+                liveFactory = factory
+                status = .ready
+            }
         } catch {
             Log.info("model load failed: \(error)")
             await MainActor.run { status = .error("Модель: \(error.localizedDescription)") }
@@ -89,8 +96,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             _ = gesture.cancel()
             return
         }
+        startLivePreview()
         do {
             try recorder.start()
+            overlay.showRecording()
             hotkeys.register(id: HotkeyID.cancel, keyCode: HotkeyConfig.cancel.keyCode,
                              modifiers: HotkeyConfig.cancel.modifiers)
             NSSound(named: "Tink")?.play()
@@ -98,6 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             Log.info("recording start")
         } catch {
             _ = gesture.cancel()
+            endLivePreview()
             Log.info("recording failed: \(error)")
             status = .error("Микрофон: \(error.localizedDescription)")
         }
@@ -115,8 +125,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return false
     }
 
+    /// Live text + level meter in the bar. The pasted text still comes from the batch pass.
+    private func startLivePreview() {
+        let session = liveFactory?.start { [weak self] text in
+            Task { @MainActor in
+                guard let self, self.status == .recording, !text.isEmpty else { return }
+                self.overlay.state.text = text
+            }
+        }
+        liveSession = session
+        recorder.onChunk = { [weak self] buffer, chunk in
+            session?.feed(buffer)
+            let level = AudioLevel.normalized(samples: Array(chunk))
+            Task { @MainActor in self?.overlay.state.level = level }
+        }
+    }
+
+    private func endLivePreview() {
+        recorder.onChunk = nil
+        if let session = liveSession { Task { await session.stop() } }
+        liveSession = nil
+    }
+
     private func cancelRecording() {
         _ = recorder.stop()
+        endLivePreview()
+        overlay.hide()
         hotkeys.unregister(id: HotkeyID.cancel)
         NSSound(named: "Funk")?.play()
         status = .ready
@@ -125,14 +159,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func stopRecording() {
         let samples = recorder.stop()
+        endLivePreview()
         hotkeys.unregister(id: HotkeyID.cancel)
         let duration = RecordingPolicy.duration(sampleCount: samples.count, sampleRate: ParakeetEngine.sampleRate)
         Log.info(String(format: "recording stop %.2fs", duration))
         guard policy.shouldTranscribe(sampleCount: samples.count, sampleRate: ParakeetEngine.sampleRate) else {
+            overlay.hide()
             status = .ready
             return
         }
         NSSound(named: "Pop")?.play()
+        overlay.showTranscribing()
         status = .transcribing
         Task { await transcribe(samples, duration: duration) }
     }
@@ -144,6 +181,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let elapsed = Date().timeIntervalSince(t0)
             await MainActor.run {
                 Log.info(String(format: "transcribed %.2fs audio in %.2fs, %d chars", duration, elapsed, raw.count))
+                overlay.hide()
                 guard let text = TranscriptCleaner.clean(raw) else {
                     status = .ready
                     return
@@ -155,7 +193,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
         } catch {
             Log.info("transcription failed: \(error)")
-            await MainActor.run { status = .error("Распознавание: \(error.localizedDescription)") }
+            await MainActor.run { overlay.hide(); status = .error("Распознавание: \(error.localizedDescription)") }
         }
     }
 
