@@ -12,8 +12,9 @@ enum Paster {
     }
 
     /// Returns false when Accessibility is missing — the text is left on the clipboard.
+    /// - Parameter pressReturn: also press Return after pasting (the Send shortcut).
     @discardableResult
-    static func paste(_ text: String) -> Bool {
+    static func paste(_ text: String, pressReturn: Bool = false) -> Bool {
         let pasteboard = NSPasteboard.general
         let saved = snapshot(pasteboard)
 
@@ -24,6 +25,9 @@ enum Paster {
 
         let ourChange = pasteboard.changeCount
         sendCommandV()
+        if pressReturn {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { sendKey(36, flags: []) }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             // Only restore if nobody (user/another app) touched the clipboard meanwhile.
             guard pasteboard.changeCount == ourChange else { return }
@@ -49,12 +53,15 @@ enum Paster {
     }
 
     private static func sendCommandV() {
+        sendKey(9, flags: .maskCommand)
+    }
+
+    private static func sendKey(_ key: CGKeyCode, flags: CGEventFlags) {
         let source = CGEventSource(stateID: .combinedSessionState)
-        let vKey: CGKeyCode = 9
-        let down = CGEvent(keyboardEventSource: source, virtualKey: vKey, keyDown: true)
-        let up = CGEvent(keyboardEventSource: source, virtualKey: vKey, keyDown: false)
-        down?.flags = .maskCommand
-        up?.flags = .maskCommand
+        let down = CGEvent(keyboardEventSource: source, virtualKey: key, keyDown: true)
+        let up = CGEvent(keyboardEventSource: source, virtualKey: key, keyDown: false)
+        down?.flags = flags
+        up?.flags = flags
         down?.post(tap: .cghidEventTap)
         up?.post(tap: .cghidEventTap)
     }

@@ -38,9 +38,19 @@ Personal local dictation app for macOS (superwhisper-style), built from scratch.
 - R24. On release / stop / Esc the media resumes right away, but only if WhisperBar paused it and it is still paused (if I resumed it myself during the recording, WhisperBar does nothing). If nothing was playing, nothing is started.
 - R25. Detection and control use the vendored `mediaremote-adapter` (BSD-3, `vendor/`, runs via `/usr/bin/perl` because macOS 15.4+ blocks MediaRemote for third-party apps). If it stops working on a future macOS, dictation keeps working without pause/resume.
 
+## Settings window (2026-11-25)
+- R26. Menu bar → «Настройки…» (⌘,) opens a settings window with pages: Главная, Словарь, Горячие клавиши, Звук, Окно и запуск. Every change applies immediately and is saved to `~/Library/Application Support/WhisperBar/settings.json`. Defaults reproduce the behaviour above (R4–R7, R14, R19, R23). A corrupted or older settings file never blocks startup: missing values fall back to defaults.
+- R27. **Горячие клавиши**: four rebindable shortcuts — «Запись» (tap = toggle, hold = push-to-talk; default ⌥W — R4–R6), «Push to Talk» (hold to record, release to stop; default none), «Отмена» (default Esc — R7), «Отправить» (during a recording: paste + press Return; default none). Record by pressing the combo, ⌫ clears, ↺ restores the default. Global hotkeys are paused while recording a combo.
+- R28. Always-on shortcuts (Запись, Push to Talk) need a modifier or an F-key; a combo already used by another action is rejected with its name. Отмена/Отправить may be bare keys because they are captured only while recording. A shortcut owned by another app is shown as a warning in the menu.
+- R29. **Звук**: sound set Системные (Tink/Pop/Funk) / Мягкие (Morse/Purr/Bottle) / Выкл, volume slider (preview on change); microphone picker (system default or a specific device; a missing device falls back to the default); «Музыка во время записи»: Ставить на паузу (R23–R24) / Ничего не делать.
+- R30. **Окно и запуск**: recording window Живой бар / Без окна (no bar, no live preview); «Запускать при входе в систему» (macOS login items); buttons to open the log and the data folder.
+- R31. **Словарь**: replacements «что распозналось → на что заменить», applied to the final text before paste — case-insensitive, whole words only, any language; an empty target deletes the phrase.
+- R32. **Главная**: stats over the whole history — words, average speed (WPM over speaking time), apps used, time saved vs typing at 40 WPM — and all recent dictations with the target app's icon/name and relative time; click copies the text. History entries now store the frontmost app at stop time (older entries load without it).
+- R33. The app has a hidden main menu so ⌘C/⌘V/⌘X/⌘A/⌘Z and ⌘W work in the settings window.
+
 ## History & logs
 - R17. Every dictation is stored newest-first in `~/Library/Application Support/WhisperBar/history.json`, capped at 500 entries; survives restarts; a corrupted file never blocks startup.
 - R18. Log file: `~/Library/Logs/WhisperBar/WhisperBar.log`.
 
 ## Out of MVP (next stages)
-- Modes with LLM post-processing, custom vocabulary, meeting recording, configurable hotkey UI, launch at login.
+- Modes with LLM post-processing, vocabulary hints for the model (boosting), meeting recording, models library, mouse-button shortcut, auto mic gain, updates.

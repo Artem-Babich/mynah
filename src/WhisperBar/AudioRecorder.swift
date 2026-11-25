@@ -1,9 +1,9 @@
 import AVFoundation
 import Foundation
 
-/// Captures the default microphone and converts on the fly to 16 kHz mono Float32.
+/// Captures a microphone (selected or system default) and converts on the fly to 16 kHz mono Float32.
 final class AudioRecorder {
-    private let engine = AVAudioEngine()
+    private var engine = AVAudioEngine()
     private let target = AVAudioFormat(
         commonFormat: .pcmFormatFloat32, sampleRate: 16_000, channels: 1, interleaved: false)!
     private let lock = NSLock()
@@ -15,9 +15,22 @@ final class AudioRecorder {
     /// Set before `start()`; cleared by `stop()`.
     var onChunk: ((AVAudioPCMBuffer, UnsafeBufferPointer<Float>) -> Void)?
 
-    func start() throws {
+    /// - Parameter deviceUID: CoreAudio input UID; nil or a missing device → system default.
+    func start(deviceUID: String? = nil) throws {
         lock.withLock { samples.removeAll(keepingCapacity: true) }
+        // Fresh engine each time so a device change (or unplugged mic) never leaves a stale format.
+        engine = AVAudioEngine()
         let input = engine.inputNode
+        if let deviceUID {
+            if var deviceID = AudioDevices.deviceID(forUID: deviceUID), let unit = input.audioUnit {
+                let status = AudioUnitSetProperty(
+                    unit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0,
+                    &deviceID, UInt32(MemoryLayout<AudioDeviceID>.size))
+                if status != noErr { Log.info("input device \(deviceUID) set failed: \(status) — using default") }
+            } else {
+                Log.info("input device \(deviceUID) not found — using default")
+            }
+        }
         let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else { throw RecorderError.noInput }
         guard let converter = AVAudioConverter(from: format, to: target) else {

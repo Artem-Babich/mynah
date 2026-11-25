@@ -13,6 +13,8 @@ First launch: allow **Microphone** and **Accessibility** (System Settings → Pr
 Model (~470 MB) is cached in `~/Library/Application Support/FluidAudio/Models/parakeet-tdt-0.6b-v3`.
 
 ## Use
+Menu bar → **Настройки…** (⌘,): shortcuts, sounds, microphone, media pause, live bar on/off, launch at login, vocabulary replacements, stats.
+
 | Action | Result |
 |---|---|
 | Hold ⌥W, speak, release | push-to-talk |
@@ -26,3 +28,6 @@ swift build --disable-sandbox -c release --product whisperbar-cli
 .build/release/whisperbar-cli transcribe some.wav              # smoke test without UI
 ```
 Requirements: `docs/requirements.md`. Log: `~/Library/Logs/WhisperBar/WhisperBar.log`.
+
+## License
+MIT — see `LICENSE`. Third-party: mediaremote-adapter (BSD-3, vendored), FluidAudio (Apache-2.0), Parakeet v3 model (CC-BY-4.0).
