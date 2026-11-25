@@ -3,14 +3,8 @@ import Foundation
 public enum HotkeyRole: CaseIterable, Sendable {
     case toggle, pushToTalk, cancel, send
 
-    public var title: String {
-        switch self {
-        case .toggle: return "Запись (нажать / удерживать)"
-        case .pushToTalk: return "Push to Talk"
-        case .cancel: return "Отмена записи"
-        case .send: return "Отправить"
-        }
-    }
+    /// Title in the current interface language.
+    public var title: String { title(L.current) }
 
     /// Always registered (vs. only while recording).
     public var isAlwaysOn: Bool { self == .toggle || self == .pushToTalk }
@@ -42,12 +36,14 @@ public enum HotkeyValidation {
     ]
 
     /// nil = OK, otherwise a message to show next to the shortcut.
-    public static func problem(for hotkey: Hotkey, role: HotkeyRole, in settings: AppSettings) -> String? {
+    public static func problem(
+        for hotkey: Hotkey, role: HotkeyRole, in settings: AppSettings, language: AppLanguage = L.current
+    ) -> String? {
         if role.isAlwaysOn, hotkey.modifiers == 0, !fKeyCodes.contains(hotkey.keyCode) {
-            return "Нужен модификатор (⌃⌥⇧⌘) или F-клавиша — иначе клавиша перестанет печатать"
+            return L.t(.validationNeedsModifier, language)
         }
         if let other = HotkeyRole.allCases.first(where: { $0 != role && settings.hotkey(for: $0) == hotkey }) {
-            return "Уже занято: \(other.title)"
+            return L.f(.validationAlreadyUsed, language, other.title(language))
         }
         return nil
     }

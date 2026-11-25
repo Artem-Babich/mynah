@@ -13,7 +13,7 @@ First launch: allow **Microphone** and **Accessibility** (System Settings → Pr
 Model (~470 MB) is cached in `~/Library/Application Support/FluidAudio/Models/parakeet-tdt-0.6b-v3`.
 
 ## Use
-Menu bar → **Настройки…** (⌘,): shortcuts, sounds, microphone, media pause, live bar on/off, launch at login, vocabulary replacements, stats.
+Menu bar → **Settings…** (⌘,): interface language (English / Русский), shortcuts, sounds, microphone, media pause, live bar on/off, launch at login, vocabulary replacements, stats.
 
 | Action | Result |
 |---|---|

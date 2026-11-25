@@ -7,7 +7,11 @@ import WhisperBarEngine
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private enum Status: Equatable {
-        case loading(Double), ready, recording, transcribing, error(String)
+        case loading(Double), ready, recording, transcribing, error(ErrorKind, String)
+    }
+
+    private enum ErrorKind: Equatable {
+        case model, microphone, accessibility, transcription
     }
 
     private enum HotkeyID {
@@ -43,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Log.info("launch")
+        L.current = settings.language
         NSApp.mainMenu = Self.makeMainMenu()
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         let menu = NSMenu()
@@ -63,6 +68,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 DispatchQueue.main.async {
                     self.registerAlwaysOnHotkeys(self.settings, capturing: self.settingsModel.isCapturingShortcut)
                 }
+            }
+            .store(in: &cancellables)
+        settingsModel.$settings
+            .dropFirst()
+            .map(\.language)
+            .removeDuplicates()
+            .sink { language in
+                L.current = language
+                NSApp.mainMenu = Self.makeMainMenu()
             }
             .store(in: &cancellables)
         settingsModel.$isCapturingShortcut
@@ -93,7 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
         } catch {
             Log.info("model load failed: \(error)")
-            await MainActor.run { status = .error("Модель: \(error.localizedDescription)") }
+            await MainActor.run { status = .error(.model, error.localizedDescription) }
         }
     }
 
@@ -109,7 +123,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             guard let key else { continue }
             if !hotkeys.register(id: id, keyCode: key.keyCode, modifiers: key.modifiers) { taken.append(key.label) }
         }
-        hotkeyWarning = taken.isEmpty ? nil : "\(taken.joined(separator: ", ")) занят другим приложением (superwhisper?)"
+        hotkeyWarning = taken.isEmpty ? nil : taken.joined(separator: ", ")
         Log.info("hotkeys: toggle=\(s.toggleHotkey?.label ?? "-") ptt=\(s.pushToTalkHotkey?.label ?? "-") taken=\(taken)")
     }
 
@@ -174,7 +188,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             _ = gesture.cancel()
             endLivePreview()
             Log.info("recording failed: \(error)")
-            status = .error("Микрофон: \(error.localizedDescription)")
+            status = .error(.microphone, error.localizedDescription)
         }
     }
 
@@ -186,7 +200,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     /// Mic errors are retryable; model errors are not.
     private var recorderCanRetry: Bool {
-        if case .error(let msg) = status { return msg.hasPrefix("Микрофон") }
+        if case .error(.microphone, _) = status { return true }
         return false
     }
 
@@ -268,11 +282,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 historyModel.add(HistoryEntry(
                     date: Date(), text: text, audioDuration: duration,
                     appBundleID: targetApp?.bundleIdentifier, appName: targetApp?.localizedName))
-                status = pasted ? .ready : .error("Нет доступа Accessibility — текст в буфере")
+                status = pasted ? .ready : .error(.accessibility, "")
             }
         } catch {
             Log.info("transcription failed: \(error)")
-            await MainActor.run { overlay.hide(); status = .error("Распознавание: \(error.localizedDescription)") }
+            await MainActor.run { overlay.hide(); status = .error(.transcription, error.localizedDescription) }
         }
     }
 
@@ -297,15 +311,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusText: String {
         switch status {
         case .loading(let p): return p > 0 && p < 1
-            ? String(format: "Загрузка модели… %.0f%%", p * 100) : "Загрузка модели…"
+            ? L.f(.loadingModelPercent, L.current, Int(p * 100)) : L.t(.loadingModel)
         case .ready:
-            let keys = [settings.toggleHotkey.map { "\($0.label) (нажать/удерживать)" },
-                        settings.pushToTalkHotkey.map { "\($0.label) (удерживать)" }].compactMap { $0 }
-            return keys.isEmpty ? "Готово — хоткей не задан (Настройки → Горячие клавиши)"
-                : "Готово — " + keys.joined(separator: ", ")
-        case .recording: return "Запись…"
-        case .transcribing: return "Распознавание…"
-        case .error(let msg): return "⚠️ \(msg)"
+            let keys = [settings.toggleHotkey.map { L.f(.tapOrHold, L.current, $0.label) },
+                        settings.pushToTalkHotkey.map { L.f(.holdOnly, L.current, $0.label) }].compactMap { $0 }
+            return keys.isEmpty ? L.t(.readyNoHotkey) : L.f(.ready, L.current, keys.joined(separator: ", "))
+        case .recording: return L.t(.recording)
+        case .transcribing: return L.t(.transcribing)
+        case .error(let kind, let detail):
+            switch kind {
+            case .model: return "⚠️ " + L.f(.errModel, L.current, detail)
+            case .microphone: return "⚠️ " + L.f(.errMicrophone, L.current, detail)
+            case .accessibility: return "⚠️ " + L.t(.errNoAccessibility)
+            case .transcription: return "⚠️ " + L.f(.errTranscription, L.current, detail)
+            }
         }
     }
 
@@ -313,15 +332,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.removeAllItems()
         menu.addItem(withTitle: statusText, action: nil, keyEquivalent: "").isEnabled = false
         if let hotkeyWarning {
-            menu.addItem(withTitle: "⚠️ \(hotkeyWarning)", action: nil, keyEquivalent: "").isEnabled = false
+            menu.addItem(withTitle: "⚠️ " + L.f(.hotkeyTaken, L.current, hotkeyWarning), action: nil, keyEquivalent: "")
+                .isEnabled = false
         }
         menu.addItem(.separator())
 
         let recent = historyModel.entries.prefix(10)
         if recent.isEmpty {
-            menu.addItem(withTitle: "История пуста", action: nil, keyEquivalent: "").isEnabled = false
+            menu.addItem(withTitle: L.t(.historyEmpty), action: nil, keyEquivalent: "").isEnabled = false
         } else {
-            menu.addItem(withTitle: "Последние (клик — скопировать)", action: nil, keyEquivalent: "").isEnabled = false
+            menu.addItem(withTitle: L.t(.recentHeader), action: nil, keyEquivalent: "").isEnabled = false
             for entry in recent {
                 let title = entry.text.count > 60 ? String(entry.text.prefix(60)) + "…" : entry.text
                 let item = NSMenuItem(title: title, action: #selector(copyEntry(_:)), keyEquivalent: "")
@@ -332,15 +352,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
         }
         menu.addItem(.separator())
-        addItem(menu, "Настройки…", #selector(openSettings), key: ",")
-        addItem(menu, "Открыть историю (JSON)", #selector(openHistory))
-        addItem(menu, "Открыть лог", #selector(openLog))
+        addItem(menu, L.t(.menuSettings), #selector(openSettings), key: ",")
+        addItem(menu, L.t(.menuOpenHistory), #selector(openHistory))
+        addItem(menu, L.t(.menuOpenLog), #selector(openLog))
         if !Paster.isTrusted {
-            addItem(menu, "Разрешить вставку (Accessibility)…", #selector(openAccessibility))
+            addItem(menu, L.t(.menuGrantAccessibility), #selector(openAccessibility))
         }
-        if case .error = status { addItem(menu, "Сбросить ошибку", #selector(clearError)) }
+        if case .error = status { addItem(menu, L.t(.menuResetError), #selector(clearError)) }
         menu.addItem(.separator())
-        addItem(menu, "Выход", #selector(quit), key: "q")
+        addItem(menu, L.t(.menuQuit), #selector(quit), key: "q")
     }
 
     private func addItem(_ menu: NSMenu, _ title: String, _ action: Selector, key: String = "") {
@@ -387,20 +407,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let main = NSMenu()
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "Закрыть окно", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
-        appMenu.addItem(withTitle: "Выход", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: L.t(.menuCloseWindow), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        appMenu.addItem(withTitle: L.t(.menuQuit), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
         main.addItem(appItem)
 
         let editItem = NSMenuItem()
-        let edit = NSMenu(title: "Правка")
-        edit.addItem(withTitle: "Отменить", action: Selector(("undo:")), keyEquivalent: "z")
-        edit.addItem(withTitle: "Повторить", action: Selector(("redo:")), keyEquivalent: "Z")
+        let edit = NSMenu(title: L.t(.menuEdit))
+        edit.addItem(withTitle: L.t(.menuUndo), action: Selector(("undo:")), keyEquivalent: "z")
+        edit.addItem(withTitle: L.t(.menuRedo), action: Selector(("redo:")), keyEquivalent: "Z")
         edit.addItem(.separator())
-        edit.addItem(withTitle: "Вырезать", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-        edit.addItem(withTitle: "Копировать", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        edit.addItem(withTitle: "Вставить", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        edit.addItem(withTitle: "Выбрать все", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        edit.addItem(withTitle: L.t(.menuCut), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: L.t(.menuCopy), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: L.t(.menuPaste), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: L.t(.menuSelectAll), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editItem.submenu = edit
         main.addItem(editItem)
         return main

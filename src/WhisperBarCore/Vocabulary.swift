@@ -47,14 +47,8 @@ public struct UsageStats: Equatable, Sendable {
 }
 
 public enum DurationFormat {
+    /// Russian form (kept for existing callers/specs); the app passes its language explicitly.
     public static func short(_ seconds: TimeInterval) -> String {
-        let minutes = Int(seconds) / 60
-        if minutes < 1 { return "< 1 мин" }
-        let h = minutes / 60, m = minutes % 60
-        switch (h, m) {
-        case (0, _): return "\(m) мин"
-        case (_, 0): return "\(h) ч"
-        default: return "\(h) ч \(m) мин"
-        }
+        short(seconds, language: .ru)
     }
 }

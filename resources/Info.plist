@@ -23,6 +23,6 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSMicrophoneUsageDescription</key>
-    <string>WhisperBar записывает голос, пока зажат хоткей, и распознаёт его локально.</string>
+    <string>WhisperBar records your voice while the shortcut is active and transcribes it on this Mac.</string>
 </dict>
 </plist>

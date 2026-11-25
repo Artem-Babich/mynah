@@ -19,15 +19,15 @@ struct ShortcutField: View {
         VStack(alignment: .trailing, spacing: 4) {
             HStack(spacing: 8) {
                 if capturing {
-                    Text("Нажмите сочетание…  ⌫ — очистить")
+                    Text(L.t(.shortcutPress))
                         .foregroundStyle(.secondary)
                 } else if let current {
                     KeyCaps(label: current.label)
                 } else {
-                    Text("Не задано").foregroundStyle(.tertiary)
+                    Text(L.t(.shortcutNotSet)).foregroundStyle(.tertiary)
                 }
 
-                Button(capturing ? "Отмена" : "Изменить") {
+                Button(capturing ? L.t(.shortcutCancel) : L.t(.shortcutChange)) {
                     capturing ? stopCapture() : startCapture()
                 }
 
@@ -39,7 +39,7 @@ struct ShortcutField: View {
                         Image(systemName: "arrow.counterclockwise")
                     }
                     .buttonStyle(.borderless)
-                    .help("Вернуть по умолчанию")
+                    .help(L.t(.shortcutReset))
                 }
             }
             if let problem {

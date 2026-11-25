@@ -48,6 +48,10 @@ Personal local dictation app for macOS (superwhisper-style), built from scratch.
 - R32. **Главная**: stats over the whole history — words, average speed (WPM over speaking time), apps used, time saved vs typing at 40 WPM — and all recent dictations with the target app's icon/name and relative time; click copies the text. History entries now store the frontmost app at stop time (older entries load without it).
 - R33. The app has a hidden main menu so ⌘C/⌘V/⌘X/⌘A/⌘Z and ⌘W work in the settings window.
 
+## Interface language (2026-11-25)
+- R34. The whole interface — menu-bar menu and status, live bar, settings window, shortcut names and validation messages, errors, durations, relative dates — is in **English by default**. Settings → General → Language switches it to **Русский** (and back); the choice is saved, applies immediately without restart, and older settings files open in English. Every text exists in both languages with matching placeholders (enforced by specs).
+- R35. Settings page names in English: Home, Vocabulary, Shortcuts, Sound, General (Russian: Главная, Словарь, Горячие клавиши, Звук, Общие). The language picker lives on General. The macOS microphone permission prompt text is English. Russian labels quoted in R26–R32 are the Russian-mode labels.
+
 ## History & logs
 - R17. Every dictation is stored newest-first in `~/Library/Application Support/WhisperBar/history.json`, capped at 500 entries; survives restarts; a corrupted file never blocks startup.
 - R18. Log file: `~/Library/Logs/WhisperBar/WhisperBar.log`.

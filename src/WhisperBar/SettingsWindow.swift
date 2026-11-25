@@ -1,13 +1,15 @@
 import AppKit
+import Combine
 import SwiftUI
 import WhisperBarCore
 
-/// The settings window (menu bar → «Настройки…», ⌘,).
+/// The settings window (menu bar → Settings…, ⌘,).
 @MainActor
 final class SettingsWindowController {
     private var window: NSWindow?
     private let settings: SettingsModel
     private let history: HistoryModel
+    private var languageObserver: AnyCancellable?
 
     init(settings: SettingsModel, history: HistoryModel) {
         self.settings = settings
@@ -20,13 +22,16 @@ final class SettingsWindowController {
                 contentRect: CGRect(x: 0, y: 0, width: 820, height: 600),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                 backing: .buffered, defer: false)
-            w.title = "WhisperBar — настройки"
+            w.title = L.t(.settingsTitle, settings.settings.language)
             w.isReleasedWhenClosed = false
             w.minSize = CGSize(width: 720, height: 480)
             w.contentViewController = NSHostingController(
                 rootView: SettingsView(settings: settings, history: history))
             w.center()
             window = w
+            languageObserver = settings.$settings.map(\.language).removeDuplicates().sink { [weak w] language in
+                w?.title = L.t(.settingsTitle, language)
+            }
         }
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
@@ -34,16 +39,16 @@ final class SettingsWindowController {
 }
 
 private enum Page: String, CaseIterable, Identifiable {
-    case home, vocabulary, shortcuts, sound, configuration
+    case home, vocabulary, shortcuts, sound, general
     var id: String { rawValue }
 
-    var title: String {
+    func title(_ lang: AppLanguage) -> String {
         switch self {
-        case .home: return "Главная"
-        case .vocabulary: return "Словарь"
-        case .shortcuts: return "Горячие клавиши"
-        case .sound: return "Звук"
-        case .configuration: return "Окно и запуск"
+        case .home: return L.t(.pageHome, lang)
+        case .vocabulary: return L.t(.pageVocabulary, lang)
+        case .shortcuts: return L.t(.pageShortcuts, lang)
+        case .sound: return L.t(.pageSound, lang)
+        case .general: return L.t(.pageGeneral, lang)
         }
     }
 
@@ -53,7 +58,7 @@ private enum Page: String, CaseIterable, Identifiable {
         case .vocabulary: return "character.book.closed"
         case .shortcuts: return "keyboard"
         case .sound: return "speaker.wave.2"
-        case .configuration: return "gearshape"
+        case .general: return "gearshape"
         }
     }
 }
@@ -64,20 +69,22 @@ private struct SettingsView: View {
     @State private var page: Page? = .home
 
     var body: some View {
+        let lang = settings.settings.language
         NavigationSplitView {
             List(Page.allCases, selection: $page) { page in
-                Label(page.title, systemImage: page.icon).tag(page)
+                Label(page.title(lang), systemImage: page.icon).tag(page)
             }
             .navigationSplitViewColumnWidth(min: 190, ideal: 200, max: 240)
         } detail: {
             switch page ?? .home {
-            case .home: HomePage(history: history)
+            case .home: HomePage(history: history, lang: lang, toggleLabel: settings.settings.toggleHotkey?.label)
             case .vocabulary: VocabularyPage(model: settings)
             case .shortcuts: ShortcutsPage(model: settings)
             case .sound: SoundPage(model: settings)
-            case .configuration: ConfigurationPage(model: settings)
+            case .general: GeneralPage(model: settings)
             }
         }
+        .environment(\.locale, lang.locale)
     }
 }
 
@@ -85,6 +92,8 @@ private struct SettingsView: View {
 
 private struct HomePage: View {
     @ObservedObject var history: HistoryModel
+    let lang: AppLanguage
+    let toggleLabel: String?
     @State private var copiedID: UUID?
 
     var body: some View {
@@ -92,20 +101,20 @@ private struct HomePage: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 12) {
-                    StatTile(value: "\(stats.averageWPM)", caption: "слов в минуту")
-                    StatTile(value: stats.words.formatted(), caption: "слов всего")
-                    StatTile(value: "\(stats.appsUsed)", caption: "приложений")
-                    StatTile(value: DurationFormat.short(stats.timeSaved), caption: "сэкономлено vs печать 40 WPM")
+                    StatTile(value: "\(stats.averageWPM)", caption: L.t(.statWPM, lang))
+                    StatTile(value: stats.words.formatted(.number.locale(lang.locale)), caption: L.t(.statWords, lang))
+                    StatTile(value: "\(stats.appsUsed)", caption: L.t(.statApps, lang))
+                    StatTile(value: DurationFormat.short(stats.timeSaved, language: lang), caption: L.t(.statSaved, lang))
                 }
 
-                Text("Недавние записи").font(.headline)
+                Text(L.t(.recentRecordings, lang)).font(.headline)
                 if history.entries.isEmpty {
-                    Text("Пока пусто — нажмите \(HotkeyConfig.dictate.label) и скажите что-нибудь.")
+                    Text(L.f(.emptyHistory, lang, toggleLabel ?? HotkeyConfig.dictate.label))
                         .foregroundStyle(.secondary)
                 }
                 LazyVStack(spacing: 10) {
                     ForEach(history.entries) { entry in
-                        HistoryCard(entry: entry, copied: copiedID == entry.id)
+                        HistoryCard(entry: entry, lang: lang, copied: copiedID == entry.id)
                             .onTapGesture {
                                 Paster.copy(entry.text)
                                 copiedID = entry.id
@@ -115,7 +124,7 @@ private struct HomePage: View {
             }
             .padding(24)
         }
-        .navigationTitle("Главная")
+        .navigationTitle(L.t(.pageHome, lang))
     }
 }
 
@@ -136,14 +145,8 @@ private struct StatTile: View {
 
 private struct HistoryCard: View {
     let entry: HistoryEntry
+    let lang: AppLanguage
     let copied: Bool
-
-    private static let relative: RelativeDateTimeFormatter = {
-        let f = RelativeDateTimeFormatter()
-        f.locale = Locale(identifier: "ru_RU")
-        f.unitsStyle = .short
-        return f
-    }()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -152,10 +155,9 @@ private struct HistoryCard: View {
                 if let icon = appIcon {
                     Image(nsImage: icon).resizable().frame(width: 16, height: 16)
                 }
-                Text([entry.appName, Self.relative.localizedString(for: entry.date, relativeTo: Date())]
-                    .compactMap { $0 }.joined(separator: " · "))
+                Text([entry.appName, relativeDate].compactMap { $0 }.joined(separator: " · "))
                 Spacer()
-                Text(copied ? "Скопировано" : "Клик — скопировать")
+                Text(copied ? L.t(.copied, lang) : L.t(.clickToCopy, lang))
                     .foregroundStyle(copied ? .green : .secondary)
             }
             .font(.caption)
@@ -164,6 +166,13 @@ private struct HistoryCard: View {
         .padding(14)
         .background(RoundedRectangle(cornerRadius: 12).fill(.quaternary.opacity(0.6)))
         .contentShape(Rectangle())
+    }
+
+    private var relativeDate: String {
+        let f = RelativeDateTimeFormatter()
+        f.locale = lang.locale
+        f.unitsStyle = .short
+        return f.localizedString(for: entry.date, relativeTo: Date())
     }
 
     private var appIcon: NSImage? {
@@ -181,29 +190,30 @@ private struct VocabularyPage: View {
     @State private var to = ""
 
     var body: some View {
+        let lang = model.settings.language
         Form {
             Section {
                 HStack {
-                    TextField("Что распозналось", text: $from)
+                    TextField(L.t(.vocabFrom, lang), text: $from)
                     Image(systemName: "arrow.right").foregroundStyle(.secondary)
-                    TextField("На что заменить", text: $to)
+                    TextField(L.t(.vocabTo, lang), text: $to)
                         .onSubmit(add)
-                    Button("Добавить", action: add)
+                    Button(L.t(.vocabAdd, lang), action: add)
                         .disabled(from.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             } footer: {
-                Text("Замены применяются к тексту перед вставкой: без учёта регистра, только целые слова.")
+                Text(L.t(.vocabFooter, lang))
             }
 
-            Section("Замены") {
+            Section(L.t(.vocabHeader, lang)) {
                 if model.settings.replacements.isEmpty {
-                    Text("Пока нет замен").foregroundStyle(.secondary)
+                    Text(L.t(.vocabEmpty, lang)).foregroundStyle(.secondary)
                 }
                 ForEach(model.settings.replacements) { rule in
                     HStack {
                         Text(rule.from)
                         Image(systemName: "arrow.right").foregroundStyle(.secondary)
-                        Text(rule.to.isEmpty ? "(удалить)" : rule.to)
+                        Text(rule.to.isEmpty ? L.t(.vocabDeleteMarker, lang) : rule.to)
                         Spacer()
                         Button(role: .destructive) {
                             model.settings.replacements.removeAll { $0.id == rule.id }
@@ -216,7 +226,7 @@ private struct VocabularyPage: View {
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Словарь")
+        .navigationTitle(L.t(.pageVocabulary, lang))
     }
 
     private func add() {
@@ -234,28 +244,24 @@ private struct ShortcutsPage: View {
     @ObservedObject var model: SettingsModel
 
     var body: some View {
+        let lang = model.settings.language
         Form {
-            Section("Горячие клавиши") {
-                row(.toggle, "Нажать — старт/стоп, удерживать — запись, пока держишь")
-                row(.pushToTalk, "Удерживать — запись, отпустить — готово")
-                row(.cancel, "Во время записи: отменить без вставки")
-                row(.send, "Во время записи: вставить текст и нажать Return")
+            Section(L.t(.shortcutsHeader, lang)) {
+                ForEach(HotkeyRole.allCases, id: \.self) { role in
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(role.title(lang))
+                            Text(role.hint(lang)).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        ShortcutField(role: role, model: model)
+                    }
+                    .padding(.vertical, 2)
+                }
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Горячие клавиши")
-    }
-
-    private func row(_ role: HotkeyRole, _ subtitle: String) -> some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(role.title)
-                Text(subtitle).font(.caption).foregroundStyle(.secondary)
-            }
-            Spacer()
-            ShortcutField(role: role, model: model)
-        }
-        .padding(.vertical, 2)
+        .navigationTitle(L.t(.pageShortcuts, lang))
     }
 }
 
@@ -266,12 +272,13 @@ private struct SoundPage: View {
     @State private var devices: [AudioDevices.Input] = []
 
     var body: some View {
+        let lang = model.settings.language
         Form {
-            Section("Звуковые эффекты") {
-                Picker("Набор", selection: $model.settings.soundTheme) {
-                    Text("Системные").tag(SoundTheme.system)
-                    Text("Мягкие").tag(SoundTheme.soft)
-                    Text("Выкл").tag(SoundTheme.off)
+            Section(L.t(.soundEffects, lang)) {
+                Picker(L.t(.soundSet, lang), selection: $model.settings.soundTheme) {
+                    Text(L.t(.themeSystem, lang)).tag(SoundTheme.system)
+                    Text(L.t(.themeSoft, lang)).tag(SoundTheme.soft)
+                    Text(L.t(.themeOff, lang)).tag(SoundTheme.off)
                 }
                 .pickerStyle(.segmented)
                 .onChange(of: model.settings.soundTheme) { _, _ in preview() }
@@ -286,24 +293,24 @@ private struct SoundPage: View {
                 .disabled(model.settings.soundTheme == .off)
             }
 
-            Section("Запись") {
-                Picker("Микрофон", selection: $model.settings.inputDeviceUID) {
-                    Text("Системный (по умолчанию)").tag(String?.none)
+            Section(L.t(.recordingSection, lang)) {
+                Picker(L.t(.microphone, lang), selection: $model.settings.inputDeviceUID) {
+                    Text(L.t(.microphoneDefault, lang)).tag(String?.none)
                     ForEach(devices) { device in
                         Text(device.name).tag(Optional(device.uid))
                     }
                     if let uid = model.settings.inputDeviceUID, !devices.contains(where: { $0.uid == uid }) {
-                        Text("Отключён — используется системный").tag(Optional(uid))
+                        Text(L.t(.microphoneMissing, lang)).tag(Optional(uid))
                     }
                 }
-                Picker("Музыка во время записи", selection: $model.settings.mediaWhileRecording) {
-                    Text("Ставить на паузу").tag(MediaBehavior.pause)
-                    Text("Ничего не делать").tag(MediaBehavior.nothing)
+                Picker(L.t(.mediaWhileRecording, lang), selection: $model.settings.mediaWhileRecording) {
+                    Text(L.t(.mediaPause, lang)).tag(MediaBehavior.pause)
+                    Text(L.t(.mediaNothing, lang)).tag(MediaBehavior.nothing)
                 }
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Звук")
+        .navigationTitle(L.t(.pageSound, lang))
         .onAppear { devices = AudioDevices.inputs() }
     }
 
@@ -312,25 +319,35 @@ private struct SoundPage: View {
     }
 }
 
-// MARK: Configuration
+// MARK: General
 
-private struct ConfigurationPage: View {
+private struct GeneralPage: View {
     @ObservedObject var model: SettingsModel
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var loginError: String?
 
     var body: some View {
+        let lang = model.settings.language
         Form {
-            Section("Окно записи") {
-                Picker("Во время записи показывать", selection: $model.settings.recordingWindow) {
-                    Text("Живой бар").tag(RecordingWindowStyle.bar)
-                    Text("Без окна").tag(RecordingWindowStyle.none)
+            Section {
+                Picker(L.t(.language, lang), selection: $model.settings.language) {
+                    ForEach(AppLanguage.allCases, id: \.self) { language in
+                        Text(language.nativeName).tag(language)
+                    }
                 }
                 .pickerStyle(.segmented)
             }
 
-            Section("Приложение") {
-                Toggle("Запускать при входе в систему", isOn: $launchAtLogin)
+            Section(L.t(.recordingWindowSection, lang)) {
+                Picker(L.t(.recordingWindowLabel, lang), selection: $model.settings.recordingWindow) {
+                    Text(L.t(.windowBar, lang)).tag(RecordingWindowStyle.bar)
+                    Text(L.t(.windowNone, lang)).tag(RecordingWindowStyle.none)
+                }
+                .pickerStyle(.segmented)
+            }
+
+            Section(L.t(.applicationSection, lang)) {
+                Toggle(L.t(.launchAtLogin, lang), isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, enabled in
                         loginError = LaunchAtLogin.set(enabled)
                         launchAtLogin = LaunchAtLogin.isEnabled
@@ -339,13 +356,13 @@ private struct ConfigurationPage: View {
                     Text(loginError).font(.caption).foregroundStyle(.orange)
                 }
                 HStack {
-                    Button("Открыть лог") { NSWorkspace.shared.open(Log.url) }
-                    Button("Открыть папку данных") { NSWorkspace.shared.open(AppPaths.support) }
+                    Button(L.t(.openLog, lang)) { NSWorkspace.shared.open(Log.url) }
+                    Button(L.t(.openDataFolder, lang)) { NSWorkspace.shared.open(AppPaths.support) }
                 }
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Окно и запуск")
+        .navigationTitle(L.t(.pageGeneral, lang))
         .onAppear { launchAtLogin = LaunchAtLogin.isEnabled }
     }
 }

@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import WhisperBarCore
 
 /// Captures a microphone (selected or system default) and converts on the fly to 16 kHz mono Float32.
 final class AudioRecorder {
@@ -92,8 +93,8 @@ final class AudioRecorder {
         case noInput, converter
         var errorDescription: String? {
             switch self {
-            case .noInput: return "Нет доступного микрофона"
-            case .converter: return "Не удалось настроить конвертацию аудио"
+            case .noInput: return L.t(.errNoMicrophone)
+            case .converter: return L.t(.errAudioConversion)
             }
         }
     }

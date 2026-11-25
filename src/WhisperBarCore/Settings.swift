@@ -55,6 +55,8 @@ public struct AppSettings: Equatable, Sendable {
     public var mediaWhileRecording: MediaBehavior = .pause
     public var recordingWindow: RecordingWindowStyle = .bar
     public var replacements: [Replacement] = []
+    /// Interface language; English by default.
+    public var language: AppLanguage = .en
 
     public init() {}
 }
@@ -62,7 +64,7 @@ public struct AppSettings: Equatable, Sendable {
 extension AppSettings: Codable {
     private enum Keys: String, CodingKey {
         case toggleHotkey, pushToTalkHotkey, cancelHotkey, sendHotkey, soundTheme, soundVolume,
-            inputDeviceUID, mediaWhileRecording, recordingWindow, replacements
+            inputDeviceUID, mediaWhileRecording, recordingWindow, replacements, language
     }
 
     // Every key is optional: files from older versions keep their values, new ones get defaults.
@@ -85,6 +87,7 @@ extension AppSettings: Codable {
         recordingWindow = (try? c.decodeIfPresent(RecordingWindowStyle.self, forKey: .recordingWindow))
             ?? d.recordingWindow
         replacements = (try? c.decodeIfPresent([Replacement].self, forKey: .replacements)) ?? d.replacements
+        language = (try? c.decodeIfPresent(AppLanguage.self, forKey: .language)) ?? d.language
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -99,6 +102,7 @@ extension AppSettings: Codable {
         try c.encode(mediaWhileRecording, forKey: .mediaWhileRecording)
         try c.encode(recordingWindow, forKey: .recordingWindow)
         try c.encode(replacements, forKey: .replacements)
+        try c.encode(language, forKey: .language)
     }
 }
 
