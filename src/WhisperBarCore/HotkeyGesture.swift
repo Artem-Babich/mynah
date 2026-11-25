@@ -1,8 +1,10 @@
 import Foundation
 
-public enum HotkeyAction: Equatable, Sendable { case start, stop, cancel, none }
+public enum HotkeyAction: Equatable, Sendable { case start, stop, cancel, send, none }
 
-/// One hotkey, two styles: hold = push-to-talk, quick tap = toggle (latched).
+/// Recording gestures. The toggle key has two styles: hold = push-to-talk, quick tap = toggle
+/// (latched). An optional dedicated push-to-talk key always stops on release. Send finishes a
+/// recording with "paste + Return".
 public struct HotkeyGesture: Sendable {
     private enum State: Sendable {
         case idle
@@ -12,6 +14,8 @@ public struct HotkeyGesture: Sendable {
         case latched
         /// Key is down but must be ignored until released (after stop/cancel).
         case swallowRelease
+        /// Recording held by the dedicated push-to-talk key.
+        case pttHeld
     }
 
     private let holdThreshold: TimeInterval
@@ -23,7 +27,7 @@ public struct HotkeyGesture: Sendable {
 
     public var isRecording: Bool {
         switch state {
-        case .pressed, .latched: return true
+        case .pressed, .latched, .pttHeld: return true
         case .idle, .swallowRelease: return false
         }
     }
@@ -36,7 +40,7 @@ public struct HotkeyGesture: Sendable {
         case .latched:
             state = .swallowRelease
             return .stop
-        case .pressed, .swallowRelease:
+        case .pressed, .swallowRelease, .pttHeld:
             return .none
         }
     }
@@ -53,7 +57,7 @@ public struct HotkeyGesture: Sendable {
         case .swallowRelease:
             state = .idle
             return .none
-        case .idle, .latched:
+        case .idle, .latched, .pttHeld:
             return .none
         }
     }
@@ -63,9 +67,38 @@ public struct HotkeyGesture: Sendable {
         case .pressed:
             state = .swallowRelease
             return .cancel
-        case .latched:
+        case .latched, .pttHeld:
             state = .idle
             return .cancel
+        case .idle, .swallowRelease:
+            return .none
+        }
+    }
+
+    // MARK: dedicated push-to-talk key
+
+    public mutating func pushToTalkDown() -> HotkeyAction {
+        guard case .idle = state else { return .none }
+        state = .pttHeld
+        return .start
+    }
+
+    public mutating func pushToTalkUp() -> HotkeyAction {
+        guard case .pttHeld = state else { return .none }
+        state = .idle
+        return .stop
+    }
+
+    // MARK: send
+
+    public mutating func send() -> HotkeyAction {
+        switch state {
+        case .pressed:
+            state = .swallowRelease
+            return .send
+        case .latched, .pttHeld:
+            state = .idle
+            return .send
         case .idle, .swallowRelease:
             return .none
         }

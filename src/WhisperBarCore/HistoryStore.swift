@@ -5,12 +5,20 @@ public struct HistoryEntry: Codable, Equatable, Sendable, Identifiable {
     public var date: Date
     public var text: String
     public var audioDuration: TimeInterval
+    /// Frontmost app the text was pasted into (absent in history from older versions).
+    public var appBundleID: String?
+    public var appName: String?
 
-    public init(id: UUID = UUID(), date: Date, text: String, audioDuration: TimeInterval) {
+    public init(
+        id: UUID = UUID(), date: Date, text: String, audioDuration: TimeInterval,
+        appBundleID: String? = nil, appName: String? = nil
+    ) {
         self.id = id
         self.date = date
         self.text = text
         self.audioDuration = audioDuration
+        self.appBundleID = appBundleID
+        self.appName = appName
     }
 }
 

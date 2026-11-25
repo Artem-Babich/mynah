@@ -161,8 +161,8 @@ private struct OverlayView: View {
     private var isPlaceholder: Bool { state.phase == .transcribing || state.text.isEmpty }
 
     private var displayText: String {
-        if state.phase == .transcribing { return "Распознавание…" }
-        if state.text.isEmpty { return "Говорите…  (Esc — отмена)" }
+        if state.phase == .transcribing { return L.t(.transcribing) }
+        if state.text.isEmpty { return L.t(.barSpeak) }
         // Safety cap for very long dictations; the panel itself scrolls.
         return LiveTranscript.tail(state.text, maxChars: 4000)
     }

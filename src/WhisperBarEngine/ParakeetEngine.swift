@@ -47,6 +47,6 @@ public actor ParakeetEngine {
 
     public enum EngineError: Error, LocalizedError {
         case notLoaded
-        public var errorDescription: String? { "Модель ещё не загружена" }
+        public var errorDescription: String? { L.t(.errModelNotLoaded) }
     }
 }
