@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         .appendingPathComponent("WhisperBar/history.json"))
     private var status: Status = .loading(0) { didSet { refreshIcon() } }
     private let overlay = OverlayPanel()
+    private let media = MediaController()
     private var liveFactory: LiveSessionFactory?
     private var liveSession: LiveSession?
 
@@ -100,6 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         do {
             try recorder.start()
             overlay.showRecording()
+            media.recordingStarted()
             hotkeys.register(id: HotkeyID.cancel, keyCode: HotkeyConfig.cancel.keyCode,
                              modifiers: HotkeyConfig.cancel.modifiers)
             NSSound(named: "Tink")?.play()
@@ -149,6 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func cancelRecording() {
         _ = recorder.stop()
+        media.recordingEnded()
         endLivePreview()
         overlay.hide()
         hotkeys.unregister(id: HotkeyID.cancel)
@@ -159,6 +162,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func stopRecording() {
         let samples = recorder.stop()
+        media.recordingEnded()
         endLivePreview()
         hotkeys.unregister(id: HotkeyID.cancel)
         let duration = RecordingPolicy.duration(sampleCount: samples.count, sampleRate: ParakeetEngine.sampleRate)

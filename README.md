@@ -8,6 +8,7 @@ Parakeet TDT v3 (multilingual) on the Neural Engine via [FluidAudio](https://git
 scripts/build-app.sh          # → build/WhisperBar.app (signed with your Apple Development identity)
 open build/WhisperBar.app
 ```
+Build needs Xcode + `cmake` (`brew install cmake`) for the vendored media helper.
 First launch: allow **Microphone** and **Accessibility** (System Settings → Privacy & Security).
 Model (~470 MB) is cached in `~/Library/Application Support/FluidAudio/Models/parakeet-tdt-0.6b-v3`.
 

@@ -18,6 +18,15 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/WhisperBar "$APP/Contents/MacOS/WhisperBar"
 cp resources/Info.plist "$APP/Contents/Info.plist"
 
+# Media pause/resume helper (vendor/mediaremote-adapter, BSD-3): framework + perl script.
+cmake -S vendor/mediaremote-adapter -B .build/mediaremote-adapter -DCMAKE_BUILD_TYPE=Release >/dev/null
+cmake --build .build/mediaremote-adapter --target MediaRemoteAdapter >/dev/null
+MR="$APP/Contents/Resources/MediaRemote"
+mkdir -p "$MR"
+cp -R .build/mediaremote-adapter/MediaRemoteAdapter.framework "$MR/"
+cp vendor/mediaremote-adapter/bin/mediaremote-adapter.pl "$MR/"
+codesign --force --sign "$SIGN_ID" "$MR/MediaRemoteAdapter.framework"
+
 codesign --force --options runtime --entitlements resources/WhisperBar.entitlements \
   --sign "$SIGN_ID" "$APP"
 codesign --verify --verbose=1 "$APP"

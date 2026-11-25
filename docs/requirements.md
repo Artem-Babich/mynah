@@ -32,6 +32,11 @@ Personal local dictation app for macOS (superwhisper-style), built from scratch.
 - R21. Live text comes from FluidAudio's sliding-window streaming (Parakeet v3), window 4 s left / 1 s chunk / 0.5 s right: first words after ~1.5 s, updates every ~1 s. It is a **preview only**: the pasted text still comes from the full batch pass (R1).
 - R22. After stop, the bar shows «Распознавание…», then hides as soon as the text is pasted. Cancel (Esc), too-short recordings and errors hide it immediately.
 
+## Media while dictating
+- R23. When recording starts and some app is playing media (Chrome, Spotify, Music…, i.e. the system "Now Playing" app), it is paused.
+- R24. On release / stop / Esc the media resumes right away, but only if WhisperBar paused it and it is still paused (if I resumed it myself during the recording, WhisperBar does nothing). If nothing was playing, nothing is started.
+- R25. Detection and control use the vendored `mediaremote-adapter` (BSD-3, `vendor/`, runs via `/usr/bin/perl` because macOS 15.4+ blocks MediaRemote for third-party apps). If it stops working on a future macOS, dictation keeps working without pause/resume.
+
 ## History & logs
 - R17. Every dictation is stored newest-first in `~/Library/Application Support/WhisperBar/history.json`, capped at 500 entries; survives restarts; a corrupted file never blocks startup.
 - R18. Log file: `~/Library/Logs/WhisperBar/WhisperBar.log`.
