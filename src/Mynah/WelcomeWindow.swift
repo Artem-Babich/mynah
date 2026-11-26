@@ -12,8 +12,9 @@ final class WelcomeModel: ObservableObject {
     @Published var accessibility: Bool = Paster.isTrusted
     @Published var model: ModelStatus = .loading(0)
     @Published var accessibilityRequested = false
-    /// Fired once when Accessibility flips to granted — the window comes back to the front.
-    var onAccessibilityGranted: (() -> Void)?
+    /// Brings the window back to the front. Fired when the microphone prompt is answered and when
+    /// Accessibility flips to granted: macOS hands focus back to the previous app after system dialogs.
+    var onNeedsFocus: (() -> Void)?
 
     var checklist: OnboardingChecklist {
         OnboardingChecklist(microphone: microphone, accessibility: accessibility, model: model)
@@ -22,7 +23,7 @@ final class WelcomeModel: ObservableObject {
     func refresh() {
         microphone = Self.currentMicrophone()
         let ax = Paster.isTrusted
-        if ax, !accessibility { onAccessibilityGranted?() }
+        if ax, !accessibility { onNeedsFocus?() }
         accessibility = ax
     }
 
@@ -31,7 +32,10 @@ final class WelcomeModel: ObservableObject {
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .audio) { granted in
                 Log.info("microphone granted=\(granted)")
-                Task { @MainActor in self.refresh() }
+                Task { @MainActor in
+                    self.refresh()
+                    self.onNeedsFocus?()
+                }
             }
         case .denied:
             Self.openPrivacyPane("Privacy_Microphone")
@@ -72,7 +76,7 @@ final class WelcomeWindowController: NSObject, NSWindowDelegate {
         self.settings = settings
         self.openSettings = openSettings
         super.init()
-        model.onAccessibilityGranted = { [weak self] in self?.bringToFront() }
+        model.onNeedsFocus = { [weak self] in self?.bringToFront() }
     }
 
     func show() {
