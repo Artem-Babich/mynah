@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build WhisperBar.app into ./build.
+# Build Mynah.app into ./build.
 #   scripts/build-app.sh            build + sign
 #   SIGN_ID="-" scripts/build-app.sh  ad-hoc signing (permissions reset on every rebuild)
 #   VERSION=0.2.0 SIGN_ID="Developer ID Application: …" scripts/build-app.sh   release build (see release.sh)
@@ -11,12 +11,12 @@ SIGN_ID="${SIGN_ID:-$(security find-identity -v -p codesigning | awk -F'"' '/App
 SIGN_ID="${SIGN_ID:--}"
 
 # --disable-sandbox: SwiftPM's own sandbox can't nest inside an already sandboxed shell.
-swift build -c release --product WhisperBar ${SWIFTPM_FLAGS:---disable-sandbox}
+swift build -c release --product Mynah ${SWIFTPM_FLAGS:---disable-sandbox}
 
-APP=build/WhisperBar.app
+APP=build/Mynah.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp .build/release/WhisperBar "$APP/Contents/MacOS/WhisperBar"
+cp .build/release/Mynah "$APP/Contents/MacOS/Mynah"
 cp resources/Info.plist "$APP/Contents/Info.plist"
 if [[ -n "${VERSION:-}" ]]; then
   plutil -replace CFBundleShortVersionString -string "$VERSION" "$APP/Contents/Info.plist"
@@ -35,7 +35,7 @@ cp -R .build/mediaremote-adapter/MediaRemoteAdapter.framework "$MR/"
 cp vendor/mediaremote-adapter/bin/mediaremote-adapter.pl "$MR/"
 codesign --force --options runtime $TIMESTAMP --sign "$SIGN_ID" "$MR/MediaRemoteAdapter.framework"
 
-codesign --force --options runtime $TIMESTAMP --entitlements resources/WhisperBar.entitlements \
+codesign --force --options runtime $TIMESTAMP --entitlements resources/Mynah.entitlements \
   --sign "$SIGN_ID" "$APP"
 codesign --verify --strict --verbose=1 "$APP"
 echo "built $APP (signed with: $SIGN_ID)"

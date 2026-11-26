@@ -1,4 +1,4 @@
-# WhisperBar — functional requirements
+# Mynah — functional requirements
 
 Personal local dictation app for macOS (superwhisper-style), built from scratch.
 
@@ -35,11 +35,11 @@ Personal local dictation app for macOS (superwhisper-style), built from scratch.
 
 ## Media while dictating
 - R23. When recording starts and some app is playing media (Chrome, Spotify, Music…, i.e. the system "Now Playing" app), it is paused.
-- R24. On release / stop / Esc the media resumes right away, but only if WhisperBar paused it and it is still paused (if I resumed it myself during the recording, WhisperBar does nothing). If nothing was playing, nothing is started.
+- R24. On release / stop / Esc the media resumes right away, but only if Mynah paused it and it is still paused (if I resumed it myself during the recording, Mynah does nothing). If nothing was playing, nothing is started.
 - R25. Detection and control use the vendored `mediaremote-adapter` (BSD-3, `vendor/`, runs via `/usr/bin/perl` because macOS 15.4+ blocks MediaRemote for third-party apps). If it stops working on a future macOS, dictation keeps working without pause/resume.
 
 ## Settings window (2026-11-25)
-- R26. Menu bar → «Настройки…» (⌘,) opens a settings window with pages: Главная, Словарь, Горячие клавиши, Звук, Окно и запуск. Every change applies immediately and is saved to `~/Library/Application Support/WhisperBar/settings.json`. Defaults reproduce the behaviour above (R4–R7, R14, R19, R23). A corrupted or older settings file never blocks startup: missing values fall back to defaults.
+- R26. Menu bar → «Настройки…» (⌘,) opens a settings window with pages: Главная, Словарь, Горячие клавиши, Звук, Окно и запуск. Every change applies immediately and is saved to `~/Library/Application Support/Mynah/settings.json`. Defaults reproduce the behaviour above (R4–R7, R14, R19, R23). A corrupted or older settings file never blocks startup: missing values fall back to defaults.
 - R27. **Горячие клавиши**: four rebindable shortcuts — «Запись» (tap = toggle, hold = push-to-talk; default ⌥W — R4–R6), «Push to Talk» (hold to record, release to stop; default none), «Отмена» (default Esc — R7), «Отправить» (during a recording: paste + press Return; default none). Record by pressing the combo, ⌫ clears, ↺ restores the default. Global hotkeys are paused while recording a combo.
 - R28. Always-on shortcuts (Запись, Push to Talk) need a modifier or an F-key; a combo already used by another action is rejected with its name. Отмена/Отправить may be bare keys because they are captured only while recording. A shortcut owned by another app is shown as a warning in the menu.
 - R29. **Звук**: sound set Системные (Tink/Pop/Funk) / Мягкие (Morse/Purr/Bottle) / Выкл, volume slider (preview on change); microphone picker (system default or a specific device; a missing device falls back to the default); «Музыка во время записи»: Ставить на паузу (R23–R24) / Ничего не делать.
@@ -53,13 +53,18 @@ Personal local dictation app for macOS (superwhisper-style), built from scratch.
 - R35. Settings page names in English: Home, Vocabulary, Shortcuts, Sound, General (Russian: Главная, Словарь, Горячие клавиши, Звук, Общие). The language picker lives on General. The macOS microphone permission prompt text is English. Russian labels quoted in R26–R32 are the Russian-mode labels.
 
 ## Distribution (2026-11-26)
-- R36. Users install without cloning: a **signed (Developer ID) and notarized DMG** on GitHub Releases (drag to Applications), or `brew install --cask artem-babich/tap/whisperbar`. Gatekeeper opens it without warnings; the app inside is stapled so it also opens offline after being copied out of the DMG.
-- R37. Requirements stated to users: Apple Silicon, macOS 14+. The cask declares the same (`arch: :arm64`, `macos: >= :sonoma`); `zap` removes WhisperBar's settings/history and logs, not the shared FluidAudio model cache.
+- R36. Users install without cloning: a **signed (Developer ID) and notarized DMG** on GitHub Releases (drag to Applications), or Homebrew: `brew tap artem-babich/tap && brew trust artem-babich/tap && brew install --cask mynah` (current Homebrew refuses third-party casks until the tap is trusted). Gatekeeper opens it without warnings; the app inside is stapled so it also opens offline after being copied out of the DMG.
+- R37. Requirements stated to users: Apple Silicon, macOS 14+. The cask declares the same (`arch: :arm64`, `macos: >= :sonoma`); `zap` removes Mynah's settings/history and logs, not the shared FluidAudio model cache.
 - R38. Releases come from `scripts/release.sh <version>`: dry run builds, tests, signs, notarizes app + DMG and checks Gatekeeper; `--publish` (only from an up-to-date, clean `main`, new tag) also tags `v<version>`, creates the GitHub Release with the DMG and opens a PR in the tap with the new version/sha256.
 
+## Rename to Mynah (2026-11-26)
+- R39. The app is named **Mynah** (formerly WhisperBar): app/bundle name, bundle ID `xyz.babich.mynah`, repo `Artem-Babich/mynah`, cask `mynah`, data folder `~/Library/Application Support/Mynah`, logs `~/Library/Logs/Mynah`.
+- R40. On first launch after the update, the old `~/Library/Application Support/WhisperBar` folder (settings, vocabulary, history) is moved to the Mynah folder automatically — only when Mynah has no data yet; existing Mynah data is never overwritten. Old logs are not migrated.
+- R41. The Homebrew tap redirects the old cask name `whisperbar` to `mynah` (`cask_renames.json`). Because the bundle ID changed, macOS asks for Microphone and Accessibility again once.
+
 ## History & logs
-- R17. Every dictation is stored newest-first in `~/Library/Application Support/WhisperBar/history.json`, capped at 500 entries; survives restarts; a corrupted file never blocks startup.
-- R18. Log file: `~/Library/Logs/WhisperBar/WhisperBar.log`.
+- R17. Every dictation is stored newest-first in `~/Library/Application Support/Mynah/history.json`, capped at 500 entries; survives restarts; a corrupted file never blocks startup.
+- R18. Log file: `~/Library/Logs/Mynah/Mynah.log`.
 
 ## Out of MVP (next stages)
 - Modes with LLM post-processing, vocabulary hints for the model (boosting), meeting recording, models library, mouse-button shortcut, auto mic gain, updates.
