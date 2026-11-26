@@ -131,8 +131,10 @@ private struct WelcomeView: View {
            let icns = NSImage(contentsOf: url),
            let best = icns.representations.max(by: { $0.pixelsWide < $1.pixelsWide }),
            let cg = best.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            Log.info("welcome icon: \(url.lastPathComponent) best rep \(cg.width)px")
             return NSImage(cgImage: cg, size: NSSize(width: 128, height: 128))
         }
+        Log.info("welcome icon: AppIcon.icns not found in \(Bundle.main.bundlePath) — using applicationIconImage")
         return NSApp.applicationIconImage
     }()
 
@@ -213,8 +215,10 @@ private struct WelcomeView: View {
                 HStack {
                     Button(L.t(.welcomeOpenSettings, lang), action: onOpenSettings)
                     Spacer()
+                    // Finish only once both permissions are granted (the window's close button still works).
                     Button(L.t(.welcomeFinish, lang), action: onFinish)
                         .keyboardShortcut(.defaultAction)
+                        .disabled(list.microphoneStep != .done || list.accessibilityStep != .done)
                 }
             }
             .padding(28)
