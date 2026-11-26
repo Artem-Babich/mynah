@@ -125,6 +125,17 @@ private struct WelcomeView: View {
     let onFinish: () -> Void
     @State private var tryText = ""
 
+    /// The largest icon representation, downscaled — NSApp.applicationIconImage hands SwiftUI a tiny rep that looks pixelated.
+    private static let appIcon: NSImage = {
+        if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+           let icns = NSImage(contentsOf: url),
+           let best = icns.representations.max(by: { $0.pixelsWide < $1.pixelsWide }),
+           let cg = best.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            return NSImage(cgImage: cg, size: NSSize(width: 128, height: 128))
+        }
+        return NSApp.applicationIconImage
+    }()
+
     private var lang: AppLanguage { settings.settings.language }
     private var toggle: String { settings.settings.toggleHotkey?.label ?? "—" }
 
@@ -133,7 +144,7 @@ private struct WelcomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 HStack(spacing: 16) {
-                    Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 64, height: 64)
+                    Image(nsImage: Self.appIcon).resizable().interpolation(.high).frame(width: 64, height: 64)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(L.t(.welcomeTitle, lang)).font(.system(size: 24, weight: .bold))
                         Text(L.t(.welcomeSubtitle, lang)).foregroundStyle(.secondary)
