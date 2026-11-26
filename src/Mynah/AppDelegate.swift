@@ -30,7 +30,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let settingsModel = SettingsModel()
     private let historyModel = HistoryModel()
     private lazy var settingsWindow = SettingsWindowController(settings: settingsModel, history: historyModel)
-    private var status: Status = .loading(0) { didSet { refreshIcon() } }
+    private lazy var welcomeWindow = WelcomeWindowController(settings: settingsModel) { [weak self] in
+        self?.settingsWindow.show()
+    }
+    private var status: Status = .loading(0) {
+        didSet {
+            refreshIcon()
+            syncWelcomeModel()
+        }
+    }
     private let overlay = OverlayPanel()
     private let media = MediaController()
     private var liveFactory: LiveSessionFactory?
@@ -87,10 +95,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             .store(in: &cancellables)
 
-        AVCaptureDevice.requestAccess(for: .audio) { granted in Log.info("microphone granted=\(granted)") }
-        if !Paster.isTrusted { Paster.requestAccessibility() }
+        // Permissions are requested one at a time from the Welcome checklist, never both at launch.
+        if OnboardingChecklist.shouldShowAtLaunch(
+            completed: settings.onboardingCompleted,
+            microphone: WelcomeModel.currentMicrophone(),
+            accessibility: Paster.isTrusted) {
+            welcomeWindow.show()
+        }
 
         Task { await loadModel() }
+    }
+
+    /// The Welcome checklist mirrors the model download.
+    private func syncWelcomeModel() {
+        switch status {
+        case .loading(let p): welcomeWindow.model.model = .loading(p)
+        case .error(.model, let message): welcomeWindow.model.model = .failed(message)
+        case .ready, .recording, .transcribing, .error: welcomeWindow.model.model = .ready
+        }
     }
 
     private func loadModel() async {
@@ -353,6 +375,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         menu.addItem(.separator())
         addItem(menu, L.t(.menuSettings), #selector(openSettings), key: ",")
+        addItem(menu, L.t(.menuHowToUse), #selector(openWelcome))
         addItem(menu, L.t(.menuOpenHistory), #selector(openHistory))
         addItem(menu, L.t(.menuOpenLog), #selector(openLog))
         if !Paster.isTrusted {
@@ -374,6 +397,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func openSettings() { settingsWindow.show() }
+
+    @objc private func openWelcome() { welcomeWindow.show() }
 
     @objc private func openHistory() {
         if FileManager.default.fileExists(atPath: AppPaths.history.path) { NSWorkspace.shared.open(AppPaths.history) }

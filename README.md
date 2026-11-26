@@ -1,7 +1,5 @@
 # Mynah
 
-*Formerly WhisperBar.*
-
 Local push-to-talk dictation for macOS. ⌥W → speak → text appears in the active app.
 Parakeet TDT v3 (multilingual) on the Neural Engine via [FluidAudio](https://github.com/FluidInference/FluidAudio).
 
@@ -49,7 +47,8 @@ Requirements: `docs/requirements.md`. Log: `~/Library/Logs/Mynah/Mynah.log`.
 
 ## Releasing (maintainer)
 One-time: a **Developer ID Application** certificate in the login keychain and a notarytool profile
-(`xcrun notarytool store-credentials whisperbar-notary --key AuthKey_….p8 --key-id … --issuer …`).
+(`xcrun notarytool store-credentials <profile> --key AuthKey_….p8 --key-id … --issuer …`),
+named in a git-ignored `.release.env`: `NOTARY_PROFILE=<profile>`.
 ```bash
 scripts/release.sh 0.2.0            # dry run: tests, build, sign, notarize app + DMG → dist/
 scripts/release.sh 0.2.0 --publish  # from an up-to-date main: tag, GitHub Release, Homebrew tap PR

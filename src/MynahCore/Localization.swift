@@ -52,6 +52,8 @@ public enum L {
         case applicationSection, launchAtLogin, openLog, openDataFolder, language
         // durations
         case durationUnderMinute, durationMinutes, durationHours, durationHoursMinutes
+        // welcome checklist
+        case menuHowToUse, welcomeTitle, welcomeSubtitle, stepMicTitle, stepMicHint, stepMicButton, stepMicDenied, openSystemSettings, stepAxTitle, stepAxHint, stepAxButton, stepAxWaiting, stepLockedHint, stepModelTitle, stepModelHint, stepModelFailed, stepDone, howToTitle, howToTap, howToHold, howToCancel, howToMore, tryTitle, tryPlaceholder, tryLocked, welcomeOpenSettings, welcomeFinish
     }
 
     private static let en: [Key: String] = [
@@ -150,6 +152,33 @@ public enum L {
         .durationMinutes: "%d min",
         .durationHours: "%d h",
         .durationHoursMinutes: "%d h %d min",
+        .menuHowToUse: "How to use…",
+        .welcomeTitle: "Welcome to Mynah",
+        .welcomeSubtitle: "Dictate into any app. Speech is recognized right on this Mac — nothing leaves it.",
+        .stepMicTitle: "Microphone",
+        .stepMicHint: "So Mynah can hear you while the shortcut is active.",
+        .stepMicButton: "Allow Microphone",
+        .stepMicDenied: "Access was denied. Turn on Mynah in System Settings → Privacy & Security → Microphone.",
+        .openSystemSettings: "Open System Settings",
+        .stepAxTitle: "Accessibility",
+        .stepAxHint: "So Mynah can paste the text into the app you're typing in. Turn Mynah on in the list.",
+        .stepAxButton: "Allow Accessibility",
+        .stepAxWaiting: "Waiting for Mynah to be turned on in System Settings…",
+        .stepLockedHint: "Available after the previous step.",
+        .stepModelTitle: "Speech model",
+        .stepModelHint: "Downloads once (~470 MB), then everything works offline.",
+        .stepModelFailed: "Download failed: %@",
+        .stepDone: "Done",
+        .howToTitle: "How to use",
+        .howToTap: "Tap — start, tap again — stop",
+        .howToHold: "Hold — records while held",
+        .howToCancel: "Cancel recording",
+        .howToMore: "Shortcuts, sounds, vocabulary and language are in Settings.",
+        .tryTitle: "Try it here",
+        .tryPlaceholder: "Click here, press %@ and say something…",
+        .tryLocked: "Available when the steps above are done.",
+        .welcomeOpenSettings: "Open Settings",
+        .welcomeFinish: "Finish",
     ]
 
     private static let ru: [Key: String] = [
@@ -248,6 +277,33 @@ public enum L {
         .durationMinutes: "%d мин",
         .durationHours: "%d ч",
         .durationHoursMinutes: "%d ч %d мин",
+        .menuHowToUse: "Как пользоваться…",
+        .welcomeTitle: "Добро пожаловать в Mynah",
+        .welcomeSubtitle: "Диктуйте в любое приложение. Речь распознаётся прямо на этом Mac — ничего не уходит в интернет.",
+        .stepMicTitle: "Микрофон",
+        .stepMicHint: "Чтобы Mynah слышал вас, пока активен хоткей.",
+        .stepMicButton: "Разрешить микрофон",
+        .stepMicDenied: "Доступ запрещён. Включите Mynah в Системных настройках → Конфиденциальность → Микрофон.",
+        .openSystemSettings: "Открыть Системные настройки",
+        .stepAxTitle: "Универсальный доступ",
+        .stepAxHint: "Чтобы Mynah вставлял текст в приложение, где вы печатаете. Включите Mynah в списке.",
+        .stepAxButton: "Разрешить доступ",
+        .stepAxWaiting: "Ждём, пока Mynah включат в Системных настройках…",
+        .stepLockedHint: "Станет доступно после предыдущего шага.",
+        .stepModelTitle: "Модель распознавания",
+        .stepModelHint: "Скачивается один раз (~470 МБ), потом всё работает без интернета.",
+        .stepModelFailed: "Не удалось скачать: %@",
+        .stepDone: "Готово",
+        .howToTitle: "Как пользоваться",
+        .howToTap: "Нажать — старт, ещё раз — стоп",
+        .howToHold: "Удерживать — запись, пока держите",
+        .howToCancel: "Отменить запись",
+        .howToMore: "Хоткеи, звуки, словарь и язык — в настройках.",
+        .tryTitle: "Попробуйте здесь",
+        .tryPlaceholder: "Нажмите сюда, потом %@ и скажите что-нибудь…",
+        .tryLocked: "Станет доступно, когда шаги выше будут готовы.",
+        .welcomeOpenSettings: "Открыть настройки",
+        .welcomeFinish: "Готово",
     ]
 }
 

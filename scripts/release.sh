@@ -7,7 +7,7 @@
 #
 # Needs (one-time, see README → Releasing):
 #   - "Developer ID Application" identity in the login keychain
-#   - notarytool keychain profile (default: whisperbar-notary — created before the rename, name kept)
+#   - notarytool keychain profile, named in a git-ignored .release.env: NOTARY_PROFILE=<profile>
 #   - gh CLI logged in
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -18,7 +18,8 @@ PUBLISH="${2:-}"
 
 SIGN_ID="${SIGN_ID:-$(security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/{print $2; exit}')}"
 [[ -n "$SIGN_ID" ]] || { echo "no 'Developer ID Application' identity in the keychain" >&2; exit 1; }
-NOTARY_PROFILE="${NOTARY_PROFILE:-whisperbar-notary}"
+[[ -f .release.env ]] && source .release.env   # local, git-ignored: NOTARY_PROFILE=…
+NOTARY_PROFILE="${NOTARY_PROFILE:?set NOTARY_PROFILE in .release.env}"
 REPO="${REPO:-Artem-Babich/mynah}"
 TAP_REPO="${TAP_REPO:-Artem-Babich/homebrew-tap}"
 DIST=dist

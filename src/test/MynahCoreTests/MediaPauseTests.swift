@@ -1,8 +1,8 @@
 // User story: I listen to music while working. When I start dictating, whatever is playing
 // (Chrome, Spotify, Music…) pauses so it doesn't disturb me or the recognition. As soon as
-// I release the hotkey (or press Esc) it resumes — but only if WhisperBar paused it.
+// I release the hotkey (or press Esc) it resumes — but only if Mynah paused it.
 // If nothing was playing, nothing starts. If I resumed the player myself during the recording,
-// WhisperBar leaves it alone.
+// Mynah leaves it alone.
 
 import Foundation
 import Testing
@@ -22,7 +22,7 @@ struct MediaPauseCoordinatorTests {
         #expect(c.recordingStarted(isPlaying: false) == nil)
     }
 
-    @Test("when WhisperBar paused the music, it resumes when the recording ends")
+    @Test("when Mynah paused the music, it resumes when the recording ends")
     func resumesWhatItPaused() {
         var c = MediaPauseCoordinator()
         _ = c.recordingStarted(isPlaying: true)
@@ -36,7 +36,7 @@ struct MediaPauseCoordinatorTests {
         #expect(c.recordingEnded(isPlaying: false) == nil)
     }
 
-    @Test("when I resumed the player myself during recording, WhisperBar sends nothing")
+    @Test("when I resumed the player myself during recording, Mynah sends nothing")
     func userResumedManually() {
         var c = MediaPauseCoordinator()
         _ = c.recordingStarted(isPlaying: true)

@@ -57,6 +57,8 @@ public struct AppSettings: Equatable, Sendable {
     public var replacements: [Replacement] = []
     /// Interface language; English by default.
     public var language: AppLanguage = .en
+    /// The Welcome checklist was finished or closed at least once.
+    public var onboardingCompleted: Bool = false
 
     public init() {}
 }
@@ -64,7 +66,7 @@ public struct AppSettings: Equatable, Sendable {
 extension AppSettings: Codable {
     private enum Keys: String, CodingKey {
         case toggleHotkey, pushToTalkHotkey, cancelHotkey, sendHotkey, soundTheme, soundVolume,
-            inputDeviceUID, mediaWhileRecording, recordingWindow, replacements, language
+            inputDeviceUID, mediaWhileRecording, recordingWindow, replacements, language, onboardingCompleted
     }
 
     // Every key is optional: files from older versions keep their values, new ones get defaults.
@@ -88,6 +90,7 @@ extension AppSettings: Codable {
             ?? d.recordingWindow
         replacements = (try? c.decodeIfPresent([Replacement].self, forKey: .replacements)) ?? d.replacements
         language = (try? c.decodeIfPresent(AppLanguage.self, forKey: .language)) ?? d.language
+        onboardingCompleted = (try? c.decodeIfPresent(Bool.self, forKey: .onboardingCompleted)) ?? d.onboardingCompleted
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -103,6 +106,7 @@ extension AppSettings: Codable {
         try c.encode(recordingWindow, forKey: .recordingWindow)
         try c.encode(replacements, forKey: .replacements)
         try c.encode(language, forKey: .language)
+        try c.encode(onboardingCompleted, forKey: .onboardingCompleted)
     }
 }
 

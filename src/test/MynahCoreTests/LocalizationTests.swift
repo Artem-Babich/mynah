@@ -1,4 +1,4 @@
-// User story: WhisperBar's interface (menu, live bar, settings, messages) is in English by default.
+// User story: Mynah's interface (menu, live bar, settings, messages) is in English by default.
 // In Settings → General I can switch it to Russian; the switch is saved and applies everywhere.
 // No text may be missing in either language.
 
