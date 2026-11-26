@@ -11,12 +11,18 @@ SIGN_ID="${SIGN_ID:-$(security find-identity -v -p codesigning | awk -F'"' '/App
 SIGN_ID="${SIGN_ID:--}"
 
 # --disable-sandbox: SwiftPM's own sandbox can't nest inside an already sandboxed shell.
-swift build -c release --product Mynah ${SWIFTPM_FLAGS:---disable-sandbox}
+# Universal binary: Apple Silicon + Intel (FluidAudio runs on CPU/GPU where there is no Neural Engine).
+# One build per arch + lipo: `--arch arm64 --arch x86_64` switches SwiftPM to the Xcode build system,
+# which sandboxes the compiler and fails inside an already sandboxed shell.
+for arch in arm64 x86_64; do
+  swift build -c release --product Mynah --arch "$arch" ${SWIFTPM_FLAGS:---disable-sandbox}
+done
 
 APP=build/Mynah.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp .build/release/Mynah "$APP/Contents/MacOS/Mynah"
+lipo -create .build/arm64-apple-macosx/release/Mynah .build/x86_64-apple-macosx/release/Mynah \
+  -output "$APP/Contents/MacOS/Mynah"
 cp resources/Info.plist "$APP/Contents/Info.plist"
 cp resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"  # regenerate: swift scripts/make-icon.swift
 if [[ -n "${VERSION:-}" ]]; then
