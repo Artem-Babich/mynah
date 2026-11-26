@@ -52,6 +52,11 @@ Personal local dictation app for macOS (superwhisper-style), built from scratch.
 - R34. The whole interface — menu-bar menu and status, live bar, settings window, shortcut names and validation messages, errors, durations, relative dates — is in **English by default**. Settings → General → Language switches it to **Русский** (and back); the choice is saved, applies immediately without restart, and older settings files open in English. Every text exists in both languages with matching placeholders (enforced by specs).
 - R35. Settings page names in English: Home, Vocabulary, Shortcuts, Sound, General (Russian: Главная, Словарь, Горячие клавиши, Звук, Общие). The language picker lives on General. The macOS microphone permission prompt text is English. Russian labels quoted in R26–R32 are the Russian-mode labels.
 
+## Distribution (2026-11-26)
+- R36. Users install without cloning: a **signed (Developer ID) and notarized DMG** on GitHub Releases (drag to Applications), or `brew install --cask artem-babich/tap/whisperbar`. Gatekeeper opens it without warnings; the app inside is stapled so it also opens offline after being copied out of the DMG.
+- R37. Requirements stated to users: Apple Silicon, macOS 14+. The cask declares the same (`arch: :arm64`, `macos: >= :sonoma`); `zap` removes WhisperBar's settings/history and logs, not the shared FluidAudio model cache.
+- R38. Releases come from `scripts/release.sh <version>`: dry run builds, tests, signs, notarizes app + DMG and checks Gatekeeper; `--publish` (only from an up-to-date, clean `main`, new tag) also tags `v<version>`, creates the GitHub Release with the DMG and opens a PR in the tap with the new version/sha256.
+
 ## History & logs
 - R17. Every dictation is stored newest-first in `~/Library/Application Support/WhisperBar/history.json`, capped at 500 entries; survives restarts; a corrupted file never blocks startup.
 - R18. Log file: `~/Library/Logs/WhisperBar/WhisperBar.log`.

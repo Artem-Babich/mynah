@@ -2,6 +2,7 @@
 # Build WhisperBar.app into ./build.
 #   scripts/build-app.sh            build + sign
 #   SIGN_ID="-" scripts/build-app.sh  ad-hoc signing (permissions reset on every rebuild)
+#   VERSION=0.2.0 SIGN_ID="Developer ID Application: …" scripts/build-app.sh   release build (see release.sh)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -17,6 +18,13 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/WhisperBar "$APP/Contents/MacOS/WhisperBar"
 cp resources/Info.plist "$APP/Contents/Info.plist"
+if [[ -n "${VERSION:-}" ]]; then
+  plutil -replace CFBundleShortVersionString -string "$VERSION" "$APP/Contents/Info.plist"
+  plutil -replace CFBundleVersion -string "${BUILD_NUMBER:-$VERSION}" "$APP/Contents/Info.plist"
+fi
+
+# Notarization needs a secure timestamp; local dev builds skip the network round-trip.
+if [[ "$SIGN_ID" == Developer\ ID* ]]; then TIMESTAMP=--timestamp; else TIMESTAMP=--timestamp=none; fi
 
 # Media pause/resume helper (vendor/mediaremote-adapter, BSD-3): framework + perl script.
 cmake -S vendor/mediaremote-adapter -B .build/mediaremote-adapter -DCMAKE_BUILD_TYPE=Release >/dev/null
@@ -25,9 +33,9 @@ MR="$APP/Contents/Resources/MediaRemote"
 mkdir -p "$MR"
 cp -R .build/mediaremote-adapter/MediaRemoteAdapter.framework "$MR/"
 cp vendor/mediaremote-adapter/bin/mediaremote-adapter.pl "$MR/"
-codesign --force --sign "$SIGN_ID" "$MR/MediaRemoteAdapter.framework"
+codesign --force --options runtime $TIMESTAMP --sign "$SIGN_ID" "$MR/MediaRemoteAdapter.framework"
 
-codesign --force --options runtime --entitlements resources/WhisperBar.entitlements \
+codesign --force --options runtime $TIMESTAMP --entitlements resources/WhisperBar.entitlements \
   --sign "$SIGN_ID" "$APP"
-codesign --verify --verbose=1 "$APP"
+codesign --verify --strict --verbose=1 "$APP"
 echo "built $APP (signed with: $SIGN_ID)"
