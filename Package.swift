@@ -2,11 +2,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "WhisperBar",
+    name: "Mynah",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "WhisperBar", targets: ["WhisperBar"]),
-        .executable(name: "whisperbar-cli", targets: ["WhisperBarCLI"]),
+        .executable(name: "Mynah", targets: ["Mynah"]),
+        .executable(name: "mynah-cli", targets: ["MynahCLI"]),
     ],
     dependencies: [
         .package(url: "https://github.com/FluidInference/FluidAudio.git", from: "0.18.4"),
@@ -14,34 +14,34 @@ let package = Package(
     targets: [
         // Pure logic, no audio/UI/model dependencies — fully unit-tested.
         .target(
-            name: "WhisperBarCore",
-            path: "src/WhisperBarCore"
+            name: "MynahCore",
+            path: "src/MynahCore"
         ),
         // Thin wrapper over FluidAudio Parakeet TDT v3 (shared by app and CLI).
         .target(
-            name: "WhisperBarEngine",
+            name: "MynahEngine",
             dependencies: [
-                "WhisperBarCore",
+                "MynahCore",
                 .product(name: "FluidAudio", package: "FluidAudio"),
             ],
-            path: "src/WhisperBarEngine"
+            path: "src/MynahEngine"
         ),
         // Menu-bar app: hotkey, recording, transcription, paste.
         .executableTarget(
-            name: "WhisperBar",
-            dependencies: ["WhisperBarCore", "WhisperBarEngine"],
-            path: "src/WhisperBar"
+            name: "Mynah",
+            dependencies: ["MynahCore", "MynahEngine"],
+            path: "src/Mynah"
         ),
         // CLI: download the model and transcribe a file (smoke test without UI).
         .executableTarget(
-            name: "WhisperBarCLI",
-            dependencies: ["WhisperBarCore", "WhisperBarEngine"],
-            path: "src/WhisperBarCLI"
+            name: "MynahCLI",
+            dependencies: ["MynahCore", "MynahEngine"],
+            path: "src/MynahCLI"
         ),
         .testTarget(
-            name: "WhisperBarCoreTests",
-            dependencies: ["WhisperBarCore"],
-            path: "src/test/WhisperBarCoreTests"
+            name: "MynahCoreTests",
+            dependencies: ["MynahCore"],
+            path: "src/test/MynahCoreTests"
         ),
     ],
     swiftLanguageModes: [.v5]

@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>WhisperBar</string>
+    <string>Mynah</string>
     <key>CFBundleDisplayName</key>
-    <string>WhisperBar</string>
+    <string>Mynah</string>
     <key>CFBundleIdentifier</key>
-    <string>xyz.babich.whisperbar</string>
+    <string>xyz.babich.mynah</string>
     <key>CFBundleExecutable</key>
-    <string>WhisperBar</string>
+    <string>Mynah</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -23,6 +23,6 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSMicrophoneUsageDescription</key>
-    <string>WhisperBar records your voice while the shortcut is active and transcribes it on this Mac.</string>
+    <string>Mynah records your voice while the shortcut is active and transcribes it on this Mac.</string>
 </dict>
 </plist>

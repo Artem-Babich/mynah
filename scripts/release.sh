@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build, sign with Developer ID, notarize and package WhisperBar as a DMG.
+# Build, sign with Developer ID, notarize and package Mynah as a DMG.
 #
 #   scripts/release.sh 0.1.0             build + notarize + DMG into dist/ (nothing is published)
 #   scripts/release.sh 0.1.0 --publish   …then tag v0.1.0, create the GitHub Release with the DMG
@@ -7,7 +7,7 @@
 #
 # Needs (one-time, see README → Releasing):
 #   - "Developer ID Application" identity in the login keychain
-#   - notarytool keychain profile (default: whisperbar-notary)
+#   - notarytool keychain profile (default: whisperbar-notary — created before the rename, name kept)
 #   - gh CLI logged in
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -19,11 +19,11 @@ PUBLISH="${2:-}"
 SIGN_ID="${SIGN_ID:-$(security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/{print $2; exit}')}"
 [[ -n "$SIGN_ID" ]] || { echo "no 'Developer ID Application' identity in the keychain" >&2; exit 1; }
 NOTARY_PROFILE="${NOTARY_PROFILE:-whisperbar-notary}"
-REPO="${REPO:-Artem-Babich/whisperbar}"
+REPO="${REPO:-Artem-Babich/mynah}"
 TAP_REPO="${TAP_REPO:-Artem-Babich/homebrew-tap}"
 DIST=dist
-APP=build/WhisperBar.app
-DMG="$DIST/WhisperBar-$VERSION.dmg"
+APP=build/Mynah.app
+DMG="$DIST/Mynah-$VERSION.dmg"
 
 if [[ "$PUBLISH" == "--publish" ]]; then
   [[ -z "$(git status --porcelain)" ]] || { echo "working tree is not clean" >&2; exit 1; }
@@ -57,17 +57,17 @@ VERSION="$VERSION" SIGN_ID="$SIGN_ID" scripts/build-app.sh | tail -1
 rm -rf "$DIST" && mkdir -p "$DIST"
 
 echo "▶ notarize the app (so it opens offline after being copied out of the DMG)"
-ditto -c -k --keepParent "$APP" "$DIST/WhisperBar.zip"
-notarize "$DIST/WhisperBar.zip"
+ditto -c -k --keepParent "$APP" "$DIST/Mynah.zip"
+notarize "$DIST/Mynah.zip"
 xcrun stapler staple -q "$APP"
-rm "$DIST/WhisperBar.zip"
+rm "$DIST/Mynah.zip"
 
 echo "▶ DMG"
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
 cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
-hdiutil create -quiet -volname "WhisperBar $VERSION" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
+hdiutil create -quiet -volname "Mynah $VERSION" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
 codesign --force --timestamp --sign "$SIGN_ID" "$DMG"
 notarize "$DMG"
 xcrun stapler staple -q "$DMG"
@@ -81,20 +81,28 @@ echo "✔ $DMG  sha256=$SHA256"
 [[ "$PUBLISH" == "--publish" ]] || { echo "dry run: nothing published (add --publish)"; exit 0; }
 
 echo "▶ GitHub Release v$VERSION"
-git tag -a "v$VERSION" -m "WhisperBar $VERSION"
+git tag -a "v$VERSION" -m "Mynah $VERSION"
 git push origin "v$VERSION"
-gh release create "v$VERSION" "$DMG" --repo "$REPO" --title "WhisperBar $VERSION" --generate-notes
+gh release create "v$VERSION" "$DMG" --repo "$REPO" --title "Mynah $VERSION" --generate-notes
 
 echo "▶ Homebrew tap PR"
 TAP=$(mktemp -d)
 gh repo clone "$TAP_REPO" "$TAP" -- -q
 mkdir -p "$TAP/Casks"
-sed -e "s/__VERSION__/$VERSION/" -e "s/__SHA256__/$SHA256/" resources/whisperbar.rb.template > "$TAP/Casks/whisperbar.rb"
-git -C "$TAP" switch -q -c "whisperbar-$VERSION"
-git -C "$TAP" add Casks/whisperbar.rb
-git -C "$TAP" commit -q -m "whisperbar $VERSION"
-git -C "$TAP" push -q origin "whisperbar-$VERSION"
-gh pr create --repo "$TAP_REPO" --head "whisperbar-$VERSION" --title "whisperbar $VERSION" \
+sed -e "s/__VERSION__/$VERSION/" -e "s/__SHA256__/$SHA256/" resources/mynah.rb.template > "$TAP/Casks/mynah.rb"
+git -C "$TAP" switch -q -c "mynah-$VERSION"
+git -C "$TAP" add Casks/mynah.rb
+# Renamed casks (old → new): drop the old file, let `brew` redirect via cask_renames.json.
+if [[ -f resources/cask_renames.json ]]; then
+  cp resources/cask_renames.json "$TAP/cask_renames.json"
+  for old in $(python3 -c 'import json; print(" ".join(json.load(open("resources/cask_renames.json"))))'); do
+    git -C "$TAP" rm -q --ignore-unmatch "Casks/$old.rb"
+  done
+  git -C "$TAP" add cask_renames.json
+fi
+git -C "$TAP" commit -q -m "mynah $VERSION"
+git -C "$TAP" push -q origin "mynah-$VERSION"
+gh pr create --repo "$TAP_REPO" --head "mynah-$VERSION" --title "mynah $VERSION" \
   --body "Release: https://github.com/$REPO/releases/tag/v$VERSION"
 rm -rf "$TAP"
 echo "✔ released v$VERSION — merge the tap PR to make 'brew install --cask' pick it up"
