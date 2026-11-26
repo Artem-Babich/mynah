@@ -136,7 +136,7 @@ private struct WelcomeView: View {
            let best = icns.representations.max(by: { $0.pixelsWide < $1.pixelsWide }),
            let cg = best.cgImage(forProposedRect: nil, context: nil, hints: nil) {
             Log.info("welcome icon: \(url.lastPathComponent) best rep \(cg.width)px")
-            return NSImage(cgImage: cg, size: NSSize(width: 128, height: 128))
+            return NSImage(cgImage: cg, size: NSSize(width: 192, height: 192))
         }
         Log.info("welcome icon: AppIcon.icns not found in \(Bundle.main.bundlePath) — using applicationIconImage")
         return NSApp.applicationIconImage
@@ -150,7 +150,7 @@ private struct WelcomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 HStack(spacing: 16) {
-                    Image(nsImage: Self.appIcon).resizable().interpolation(.high).frame(width: 64, height: 64)
+                    Image(nsImage: Self.appIcon).resizable().interpolation(.high).frame(width: 96, height: 96)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(L.t(.welcomeTitle, lang)).font(.system(size: 24, weight: .bold))
                         Text(L.t(.welcomeSubtitle, lang)).foregroundStyle(.secondary)
