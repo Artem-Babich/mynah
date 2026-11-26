@@ -1,4 +1,4 @@
-// User story: when I record a new shortcut in Settings → Shortcuts, WhisperBar stops me from
+// User story: when I record a new shortcut in Settings → Shortcuts, Mynah stops me from
 // picking something that would break normal typing (a bare letter as an always-on global hotkey)
 // or a combination already used by another action, and tells me why.
 // Cancel and Send are only active during a recording, so bare keys like Esc or Return are fine there.

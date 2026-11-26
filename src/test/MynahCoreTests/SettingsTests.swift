@@ -1,4 +1,4 @@
-// User story: WhisperBar has a settings window. Whatever I change there is saved and survives
+// User story: Mynah has a settings window. Whatever I change there is saved and survives
 // restarts. Fresh installs behave exactly like before settings existed (⌥W toggle, Esc cancel,
 // system sounds, pause music, live bar). A damaged or older settings file never breaks startup:
 // missing values fall back to defaults.

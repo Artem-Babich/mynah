@@ -57,10 +57,8 @@ Personal local dictation app for macOS (superwhisper-style), built from scratch.
 - R37. Requirements stated to users: Apple Silicon, macOS 14+. The cask declares the same (`arch: :arm64`, `macos: >= :sonoma`); `zap` removes Mynah's settings/history and logs, not the shared FluidAudio model cache.
 - R38. Releases come from `scripts/release.sh <version>`: dry run builds, tests, signs, notarizes app + DMG and checks Gatekeeper; `--publish` (only from an up-to-date, clean `main`, new tag) also tags `v<version>`, creates the GitHub Release with the DMG and opens a PR in the tap with the new version/sha256.
 
-## Rename to Mynah (2026-11-26)
-- R39. The app is named **Mynah** (formerly WhisperBar): app/bundle name, bundle ID `xyz.babich.mynah`, repo `Artem-Babich/mynah`, cask `mynah`, data folder `~/Library/Application Support/Mynah`, logs `~/Library/Logs/Mynah`.
-- R40. On first launch after the update, the old `~/Library/Application Support/WhisperBar` folder (settings, vocabulary, history) is moved to the Mynah folder automatically — only when Mynah has no data yet; existing Mynah data is never overwritten. Old logs are not migrated.
-- R41. The Homebrew tap redirects the old cask name `whisperbar` to `mynah` (`cask_renames.json`). Because the bundle ID changed, macOS asks for Microphone and Accessibility again once.
+## Name and paths
+- R39. App name **Mynah**, bundle ID `xyz.babich.mynah`, repo `Artem-Babich/mynah`, cask `mynah`, data folder `~/Library/Application Support/Mynah`, logs `~/Library/Logs/Mynah`.
 
 ## Welcome checklist & icon (2026-11-26)
 - R42. No permission prompts at launch. A **Welcome** window (one page) asks for permissions **one at a time**: 1) Microphone — button «Allow Microphone» (if denied: «Open System Settings»); 2) Accessibility — unlocks only after Microphone is granted; button «Allow Accessibility» adds Mynah to the list, then «Open System Settings»; 3) Speech model — download progress. Each row shows a live ✅ (permissions re-checked every second); when Accessibility is granted the window comes back to the front.
