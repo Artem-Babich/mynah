@@ -58,6 +58,10 @@ final class AudioRecorder {
             engine.stop()
             isRunning = false
         }
+        // Release the input device. A stopped AVAudioEngine keeps its IO unit allocated, which keeps
+        // Bluetooth headsets (AirPods) in low-quality headset mode with quieter music until the app quits.
+        engine.reset()
+        engine = AVAudioEngine()  // idle: no device is opened until inputNode is touched in start()
         converter = nil
         onChunk = nil
         return lock.withLock {
