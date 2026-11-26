@@ -54,7 +54,7 @@ Personal local dictation app for macOS (superwhisper-style), built from scratch.
 
 ## Distribution (2026-11-26)
 - R36. Users install without cloning: a **signed (Developer ID) and notarized DMG** on GitHub Releases (drag to Applications), or Homebrew: `brew tap artem-babich/tap && brew trust artem-babich/tap && brew install --cask mynah` (current Homebrew refuses third-party casks until the tap is trusted). Gatekeeper opens it without warnings; the app inside is stapled so it also opens offline after being copied out of the DMG.
-- R37. Requirements stated to users: Apple Silicon, macOS 14+. The cask declares the same (`arch: :arm64`, `macos: >= :sonoma`); `zap` removes Mynah's settings/history and logs, not the shared FluidAudio model cache.
+- R37. Requirements stated to users: macOS 14+, Apple Silicon or Intel — the app is one **universal** binary (arm64 + x86_64; updated 2026-11-26, was Apple Silicon only). The cask declares `macos: >= :sonoma` and no architecture limit; `zap` removes Mynah's settings/history and logs, not the shared FluidAudio model cache.
 - R38. Releases come from `scripts/release.sh <version>`: dry run builds, tests, signs, notarizes app + DMG and checks Gatekeeper; `--publish` (only from an up-to-date, clean `main`, new tag) also tags `v<version>`, creates the GitHub Release with the DMG and opens a PR in the tap with the new version/sha256.
 
 ## Name and paths
