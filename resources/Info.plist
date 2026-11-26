@@ -8,6 +8,8 @@
     <string>Mynah</string>
     <key>CFBundleIdentifier</key>
     <string>xyz.babich.mynah</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleExecutable</key>
     <string>Mynah</string>
     <key>CFBundlePackageType</key>
